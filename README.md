@@ -97,9 +97,11 @@ assert run.stdout == "42"
 
 Message to display when they printed and `print_allowed` was `False`.
 
+
 ### `print_expect=None`
 
 String that you bet they'll print instead of return.
+
 
 ### `print_expect_message`
 
