@@ -8,6 +8,16 @@ It is used for [hackinscience](https://hackinscience.org), but could
 be used elsewhere.
 
 
+## Security considerations
+
+Running student code is probably really unsafe, unless you trust your
+students not to drop you a backdoor.
+
+This projet does *not* help with security in any ways, maybe take a
+look at [firejail](https://github.com/netblue30/firejail) if you have
+trust issues (Yes you can use `correction-helper` inside `firejail`).
+
+
 ## Usage
 
 To install it, run: `pip install correction-helper`.
