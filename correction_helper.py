@@ -10,7 +10,7 @@ import friendly_traceback
 friendly_traceback.set_formatter(friendly_traceback.formatters.markdown)
 
 
-def code(text, language="python"):
+def code(text, language="text"):
     return "    :::" + language + "\n" + indent(str(text), "    ")
 
 
