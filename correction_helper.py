@@ -116,3 +116,36 @@ else I won't be able to check it."""
             if print_expect and run.out == print_expect:
                 stderr(print_expect_message, end="\n\n")
             sys.exit(1)
+
+
+def friendly_traceback_markdown(info, level):
+    """Traceback formatted with full information but with markdown syntax."""
+    result = []
+    friendly_items = [
+        ("header", "", "\n", ""),
+        ("simulated_python_traceback", "", "\n", "pytb"),
+        ("parsing_error", "\n", "\n", ""),
+        ("parsing_error_source", "", "", "text"),
+        ("cause_header", "## ", "\n", ""),
+        ("cause", "", "\n", ""),
+        ("last_call_header", "## ", "", ""),
+        ("last_call_source", "```\n", "```", ""),
+        ("last_call_variables", "Variables:\n", "", "text"),
+        ("exception_raised_header", "## ", "\n", ""),
+        ("exception_raised_source", "", "", "text"),
+        ("exception_raised_variables", "Variables:\n", "", "text"),
+    ]
+
+    for item, prefix, suffix, pygment in friendly_items:
+        if item in info:
+            line = info[item]
+            if not isinstance(line, str):
+                line = "\n".join(line)
+            if item == "simulated_python_traceback":
+                line = line.replace("Simulated Traceback", "Traceback")
+            if prefix[:1] == "#":
+                line = line.rstrip(": ")  # Do not end titles with column
+            if pygment:
+                line = "    :::" + pygment + "\n" + indent(line, "    ")
+            result.append(prefix + line + suffix)
+    return "\n".join(result)
