@@ -123,16 +123,16 @@ def friendly_traceback_markdown(info, level):
     """Traceback formatted with full information but with markdown syntax."""
     result = []
     friendly_items = [
-        ("header", "", "\n", ""),
+        ("header", "##", "\n", ""),
         ("simulated_python_traceback", "", "\n", "pytb"),
         ("parsing_error", "\n", "\n", ""),
         ("parsing_error_source", "", "", "text"),
-        ("cause_header", "## ", "\n", ""),
+        ("cause_header", "### ", "\n", ""),
         ("cause", "", "\n", ""),
-        ("last_call_header", "## ", "", ""),
+        ("last_call_header", "### ", "", ""),
         ("last_call_source", "```\n", "```", ""),
-        ("last_call_variables", "Variables:\n", "", "text"),
-        ("exception_raised_header", "## ", "\n", ""),
+        ("last_call_variables", "Variables:\n\n", "", "text"),
+        ("exception_raised_header", "### ", "\n", ""),
         ("exception_raised_source", "", "", "text"),
         ("exception_raised_variables", "Variables:\n", "", "text"),
     ]
