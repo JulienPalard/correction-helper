@@ -4,6 +4,7 @@ from traceback import format_exc
 from contextlib import redirect_stdout, redirect_stderr
 from textwrap import indent
 from contextlib import contextmanager
+import subprocess
 
 import friendly_traceback
 
@@ -149,3 +150,22 @@ def friendly_traceback_markdown(info, level):
                 line = "    :::" + pygment + "\n" + indent(line, "    ")
             result.append(prefix + line + suffix)
     return "\n".join(result)
+
+
+def run(file="solution.py"):
+    proc = subprocess.run(
+        [
+            "python3",
+            "-m",
+            "friendly_traceback",
+            "--formatter",
+            "correction_helper.friendly_traceback_markdown",
+            file,
+        ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        universal_newlines=True,
+    )
+    if proc.stderr:
+        fail(proc.stderr)
+    return proc.stdout.strip()
