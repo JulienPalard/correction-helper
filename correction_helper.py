@@ -1,14 +1,15 @@
 from io import StringIO
 import sys
-from traceback import format_exc
+from traceback import format_exception
 from contextlib import redirect_stdout, redirect_stderr
 from textwrap import indent
 from contextlib import contextmanager
 import subprocess
-
 import friendly_traceback
+from friendly_traceback import exclude_file_from_traceback
 
-friendly_traceback.set_formatter(friendly_traceback.formatters.markdown)
+
+exclude_file_from_traceback(__file__)
 
 
 def code(text, language="text"):
@@ -26,26 +27,15 @@ def fail(text):
     sys.exit(1)
 
 
-def clean_format_exc():
-    """Like traceback.format_exc but take care of eliminating
-    correction_helper from the traceback, it's not usefull for the
-    students.
-    """
-    limit = -10
-    for limit in range(-10, 0):
-        exc = format_exc(limit=limit)
-        if "correction_helper.py" not in exc:
-            return exc
-    return format_exc()
-
-
 def _handle_student_exception(prefix, friendly=False):
-    if prefix:
-        stderr(prefix, end="\n\n")
+    etype, value, tb = sys.exc_info()
+
     if friendly:
-        friendly_traceback.explain()
+        friendly_traceback.core.exception_hook(etype, value, tb)
     else:
-        stderr(code(clean_format_exc(), "pytb"))
+        if prefix:
+            stderr(prefix, end="\n\n")
+        stderr(code("".join(format_exception(etype, value, tb)), "pytb"))
     sys.exit(1)
 
 
@@ -66,7 +56,7 @@ class Run:
 @contextmanager
 def student_code(
     exception_prefix="Got an exception:",
-    friendly=False,
+    friendly=True,
     print_allowed=False,
     print_prefix="Your code printed something (it should **not**):",
     print_expect=None,
@@ -123,18 +113,19 @@ def friendly_traceback_markdown(info, level):
     """Traceback formatted with full information but with markdown syntax."""
     result = []
     friendly_items = [
-        ("header", "##", "\n", ""),
+        ("header", "## ", "\n", ""),
         ("simulated_python_traceback", "", "\n", "pytb"),
+        ("generic", "", "\n", ""),
         ("parsing_error", "\n", "\n", ""),
         ("parsing_error_source", "", "", "text"),
         ("cause_header", "### ", "\n", ""),
         ("cause", "", "\n", ""),
         ("last_call_header", "### ", "", ""),
-        ("last_call_source", "```\n", "```", ""),
-        ("last_call_variables", "Variables:\n\n", "", "text"),
-        ("exception_raised_header", "### ", "\n", ""),
+        ("last_call_source", "", "", "text"),
+        ("last_call_variables", "\n#### Variables\n\n", "", "text"),
+        ("exception_raised_header", "\n### ", "\n", ""),
         ("exception_raised_source", "", "", "text"),
-        ("exception_raised_variables", "Variables:\n", "", "text"),
+        ("exception_raised_variables", "\n#### Variables:\n\n", "", "text"),
     ]
 
     for item, prefix, suffix, pygment in friendly_items:
@@ -152,20 +143,32 @@ def friendly_traceback_markdown(info, level):
     return "\n".join(result)
 
 
-def run(file="solution.py"):
-    proc = subprocess.run(
-        [
-            "python3",
-            "-m",
-            "friendly_traceback",
-            "--formatter",
-            "correction_helper.friendly_traceback_markdown",
-            file,
-        ],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        universal_newlines=True,
-    )
+friendly_traceback.set_formatter(friendly_traceback_markdown)
+
+
+def run(file, *args):
+    if args:
+        proc = subprocess.run(
+            ["python3", file, *args],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+        )
+    else:
+        proc = subprocess.run(
+            [
+                "python3",
+                "-m",
+                "friendly_traceback",
+                "--formatter",
+                "correction_helper.friendly_traceback_markdown",
+                file,
+                *args,
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+        )
     if proc.stderr:
         fail(proc.stderr)
     return proc.stdout.strip()
