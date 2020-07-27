@@ -1,6 +1,6 @@
 from io import StringIO
 import sys
-from traceback import format_exception
+from traceback import format_exc
 from contextlib import redirect_stdout, redirect_stderr
 from textwrap import indent
 from contextlib import contextmanager
@@ -28,14 +28,12 @@ def fail(text):
 
 
 def _handle_student_exception(prefix, friendly=False):
-    etype, value, tb = sys.exc_info()
-
     if friendly:
-        friendly_traceback.core.exception_hook(etype, value, tb)
+        friendly_traceback.explain()
     else:
         if prefix:
             stderr(prefix, end="\n\n")
-        stderr(code("".join(format_exception(etype, value, tb)), "pytb"))
+        stderr(code("".join(format_exc()), "pytb"))
     sys.exit(1)
 
 
