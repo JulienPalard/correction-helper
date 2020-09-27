@@ -1,10 +1,14 @@
 from io import StringIO
+from pathlib import Path
 import sys
+import signal
 from traceback import format_exc
 from contextlib import redirect_stdout, redirect_stderr
 from textwrap import indent
 from contextlib import contextmanager
 import subprocess
+import shlex
+
 import friendly_traceback
 from friendly_traceback import exclude_file_from_traceback
 
@@ -21,8 +25,7 @@ def stderr(*args, **kwargs):
 
 
 def fail(text):
-    """Print text on stderror and exit with failure (code=1).
-    """
+    """Print text on stderror and exit with failure (code=1)."""
     stderr(text)
     sys.exit(1)
 
@@ -51,6 +54,21 @@ class Run:
         return self.stderr.getvalue().strip()
 
 
+class TimeoutError(Exception):
+    pass
+
+
+@contextmanager
+def deadline(timeout=1):
+    def handler(signum, frame):
+        raise TimeoutError
+
+    signal.signal(signal.SIGALRM, handler)
+    signal.alarm(timeout)
+    yield
+    signal.alarm(0)
+
+
 @contextmanager
 def student_code(
     exception_prefix="Got an exception:",
@@ -60,6 +78,7 @@ def student_code(
     print_expect=None,
     print_expect_message="""Your code printed what I expected it to return,
 so maybe just replace your `print` call by a `return` statement.""",
+    timeout=1,
 ):
     """Decorator usefull to run student code.
 
@@ -80,7 +99,10 @@ so maybe just replace your `print` call by a `return` statement.""",
         sys.stdin = None
         with redirect_stdout(run.stdout):
             with redirect_stderr(run.stderr):
-                yield run
+                with deadline(timeout):
+                    yield run
+    except TimeoutError:
+        fail("Your program looks too slow, looks for an infinite loop maybe?")
     except SystemExit:
         fail(
             """Your program tried to exit,
@@ -145,28 +167,40 @@ friendly_traceback.set_formatter(friendly_traceback_markdown)
 
 
 def run(file, *args):
-    if args:
-        proc = subprocess.run(
-            ["python3", file, *args],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            universal_newlines=True,
-        )
-    else:
-        proc = subprocess.run(
-            [
-                "python3",
-                "-m",
-                "friendly_traceback",
-                "--formatter",
-                "correction_helper.friendly_traceback_markdown",
-                file,
-                *args,
-            ],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            universal_newlines=True,
-        )
+    proc = subprocess.run(
+        [
+            "python3",
+            "-m",
+            "friendly_traceback",
+            "--formatter",
+            "correction_helper.friendly_traceback_markdown",
+            file,
+            "--",
+            *args,
+        ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        universal_newlines=True,
+    )
     if proc.stderr:
-        fail(proc.stderr)
-    return proc.stdout.strip()
+        if (
+            "EOF when reading a line" in proc.stderr
+            and "input" in Path(file).read_text()
+        ):
+            fail(
+                "Don't use the `input` builtin, there's no human to interact with here."
+            )
+        if args:
+            fail(
+                f"""
+While running:
+
+{code(file + " " + " ".join(shlex.quote(a) for a in args))}
+
+Got:
+
+{proc.stderr}"""
+            )
+        else:
+            fail(proc.stderr)
+    return proc.stdout.rstrip()
