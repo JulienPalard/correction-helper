@@ -129,37 +129,50 @@ else I won't be able to check it."""
             sys.exit(1)
 
 
+class Section:
+    def __init__(self, name, prefix="", suffix="", highlight=""):
+        self.name = name
+        self.prefix = prefix
+        self.suffix = suffix
+        self.highlight = highlight
+
+
+MARKDOWN_ITEMS = [
+    Section("header", prefix="## "),
+    Section("simulated_python_traceback", highlight="pytb"),
+    Section("suggest"),
+    Section("generic"),
+    Section("parsing_error"),
+    Section("parsing_error_source", highlight="text"),
+    Section("cause_header", prefix="### "),
+    Section("cause"),
+    Section("last_call_header", prefix="### "),
+    Section("last_call_source", highlight="text"),
+    Section("last_call_variables_header", prefix="#### "),
+    Section("last_call_variables", highlight="text"),
+    Section("exception_raised_header", prefix="### "),
+    Section("exception_raised_source", highlight="text"),
+    Section("exception_raised_variables_header", prefix="#### "),
+    Section("exception_raised_variables", highlight="text"),
+]
+
+
 def friendly_traceback_markdown(info, level):
     """Traceback formatted with full information but with markdown syntax."""
     result = []
-    friendly_items = [
-        ("header", "## ", "\n", ""),
-        ("simulated_python_traceback", "", "\n", "pytb"),
-        ("generic", "", "\n", ""),
-        ("parsing_error", "\n", "\n", ""),
-        ("parsing_error_source", "", "", "text"),
-        ("cause_header", "### ", "\n", ""),
-        ("cause", "", "\n", ""),
-        ("last_call_header", "### ", "", ""),
-        ("last_call_source", "", "", "text"),
-        ("last_call_variables", "\n#### Variables\n\n", "", "text"),
-        ("exception_raised_header", "\n### ", "\n", ""),
-        ("exception_raised_source", "", "", "text"),
-        ("exception_raised_variables", "\n#### Variables:\n\n", "", "text"),
-    ]
 
-    for item, prefix, suffix, pygment in friendly_items:
-        if item in info:
-            line = info[item]
+    for item in MARKDOWN_ITEMS:
+        if item.name in info:
+            line = info[item.name]
             if not isinstance(line, str):
                 line = "\n".join(line)
-            if item == "simulated_python_traceback":
+            if item.name == "simulated_python_traceback":
                 line = line.replace("Simulated Traceback", "Traceback")
-            if prefix[:1] == "#":
+            if item.prefix[:1] == "#":
                 line = line.rstrip(": ")  # Do not end titles with column
-            if pygment:
-                line = "    :::" + pygment + "\n" + indent(line, "    ")
-            result.append(prefix + line + suffix)
+            if item.highlight:
+                line = "    :::" + item.highlight + "\n" + indent(line, "    ")
+            result.append(item.prefix + line + item.suffix + "\n\n")
     return "\n".join(result)
 
 
