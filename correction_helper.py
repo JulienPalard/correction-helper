@@ -157,7 +157,7 @@ MARKDOWN_ITEMS = [
 ]
 
 
-def friendly_traceback_markdown(info, level):
+def friendly_traceback_markdown(info, level=None, include=None):
     """Traceback formatted with full information but with markdown syntax."""
     result = []
 
