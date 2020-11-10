@@ -1,6 +1,7 @@
 from io import StringIO
 from pathlib import Path
 import sys
+import os
 import signal
 from traceback import format_exc
 from contextlib import redirect_stdout, redirect_stderr
@@ -12,6 +13,7 @@ import shlex
 import friendly_traceback
 from friendly_traceback import exclude_file_from_traceback
 
+friendly_traceback.set_lang(os.environ.get("LANGUAGE", "en"))
 
 exclude_file_from_traceback(__file__)
 
