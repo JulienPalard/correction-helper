@@ -1,8 +1,10 @@
 from io import StringIO
 from pathlib import Path
 import sys
+import gettext
 import os
 import signal
+from itertools import zip_longest
 from traceback import format_exc
 from contextlib import redirect_stdout, redirect_stderr
 from textwrap import indent
@@ -17,6 +19,8 @@ friendly_traceback.set_lang(os.environ.get("LANGUAGE", "en"))
 
 exclude_file_from_traceback(__file__)
 
+_ = gettext.translation("check", Path(__file__).parent, fallback=True).gettext
+
 
 def code(text, language="text"):
     return "    :::" + language + "\n" + indent(str(text), "    ")
@@ -26,9 +30,13 @@ def stderr(*args, **kwargs):
     print(*args, **kwargs, file=sys.stderr)
 
 
-def fail(text):
-    """Print text on stderror and exit with failure (code=1)."""
-    stderr(text)
+def fail(*args, sep="\n\n"):
+    """Print args on stderror and exit with failure (code=1).
+
+    By default, if multiple args are given, they are separated by two
+    newlines, usefull to build Markdown paragraphs.
+    """
+    stderr(sep.join(args))
     sys.exit(1)
 
 
@@ -182,6 +190,8 @@ friendly_traceback.set_formatter(friendly_traceback_markdown)
 
 
 def run(file, *args):
+    if args:
+        args = ["--"] + list(args)
     proc = subprocess.run(
         [
             "python3",
@@ -190,7 +200,6 @@ def run(file, *args):
             "--formatter",
             "correction_helper.friendly_traceback_markdown",
             file,
-            "--",
             *args,
         ],
         stdout=subprocess.PIPE,
@@ -219,3 +228,62 @@ Got:
         else:
             fail(proc.stderr)
     return proc.stdout.rstrip()
+
+
+def code_or_repr(some_string):
+    """Display some string for a student.
+
+    If the string is short enough, return it between backticks, else
+    return it as a Markdown code block.
+    """
+    if len(some_string) < 10 and "`" not in some_string:
+        return f" `{some_string}`"
+    else:
+        return "\n\n" + code(some_string)
+
+
+def compare(my, theirs):
+    """Compare two results: mine (expected to be the right one) and theirs
+    (the student output).
+
+    Both can be multi-lines, and if they differ, a proper message will
+    be raised, using correction_helper.fail.
+
+    """
+    if my.strip() == theirs.strip():
+        return
+    for line, (m, t) in enumerate(
+        zip_longest(my.split("\n"), theirs.split("\n")), start=1
+    ):
+        if m != t:
+            if m is None:
+                fail(
+                    _("Unexpected line {line}, you gave:").format(line=line)
+                    + code_or_repr(t),
+                    _("Just in case it helps, here's your full output:"),
+                    code(theirs),
+                )
+            elif t is None:
+                fail(
+                    _(
+                        "Your output is too short, missing line {line}, I'm expecting:"
+                    ).format(line=line)
+                    + code_or_repr(m),
+                    _("Just in case it helps, here's your full output:"),
+                    code(theirs),
+                )
+            else:
+                trailer = (
+                    ""
+                    if t == theirs
+                    else _("Just in case it helps, here's your full output:")
+                    + "\n\n"
+                    + code(theirs)
+                )
+                fail(
+                    _("On line {line} I'm expecting:").format(line=line)
+                    + code_or_repr(m),
+                    _("You gave:") + code_or_repr(t),
+                    trailer,
+                )
+    fail("Looks like a wrong answer, expected:", code(my), "you gave:", code(theirs))
