@@ -42,7 +42,7 @@ def fail(*args, sep="\n\n"):
 
 def _handle_student_exception(prefix, friendly=False):
     if friendly:
-        friendly_traceback.explain()
+        friendly_traceback.explain_traceback()
     else:
         if prefix:
             stderr(prefix, end="\n\n")
@@ -192,20 +192,25 @@ friendly_traceback.set_formatter(friendly_traceback_markdown)
 def run(file, *args):
     if args:
         args = ["--"] + list(args)
-    proc = subprocess.run(
-        [
-            "python3",
-            "-m",
-            "friendly_traceback",
-            "--formatter",
-            "correction_helper.friendly_traceback_markdown",
-            file,
-            *args,
-        ],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        universal_newlines=True,
-    )
+    try:
+        proc = subprocess.run(
+            [
+                "python3",
+                "-m",
+                "friendly_traceback",
+                "--formatter",
+                "correction_helper.friendly_traceback_markdown",
+                file,
+                *args,
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+        )
+    except MemoryError:
+        fail(
+            "Your program is eating up all the memory! Check for infinite loops maybe?"
+        )
     if proc.stderr:
         if (
             "EOF when reading a line" in proc.stderr
