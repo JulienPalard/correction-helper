@@ -28,3 +28,11 @@ def test_their_longer(capsys):
     out, err = capsys.readouterr()
     assert "a" in err
     assert "b" in err
+
+
+def test_space(capsys):
+    with pytest.raises(SystemExit):
+        compare("a\nb\n", "a \nb \n")
+    out, err = capsys.readouterr()
+    assert "a" in err
+    assert "your line ends with a space" in err

@@ -278,17 +278,24 @@ def compare(my, theirs):
                     code(theirs),
                 )
             else:
-                trailer = (
-                    ""
-                    if t == theirs
-                    else _("Just in case it helps, here's your full output:")
-                    + "\n\n"
-                    + code(theirs)
-                )
+                hint = ""
+                trailer = ""
+                if t != theirs:
+                    trailer = _("Just in case it helps, here's your full output:")
+                if m and t:
+                    if t[0] == " " and m[0] != " ":
+                        hint = (
+                            "\n\n" + "(Notice your line starts with a space, not mine.)"
+                        )
+                    if t[-1] == " " and m[-1] != " ":
+                        hint = (
+                            "\n\n" + "(Notice your line ends with a space, not mine.)"
+                        )
                 fail(
                     _("On line {line} I'm expecting:").format(line=line)
                     + code_or_repr(m),
                     _("You gave:") + code_or_repr(t),
+                    hint,
                     trailer,
                 )
     fail("Looks like a wrong answer, expected:", code(my), "you gave:", code(theirs))
