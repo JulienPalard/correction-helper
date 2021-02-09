@@ -112,3 +112,9 @@ Default value:
 
 This is the message displayed when you won you bet with
 `print_expect`, they printed instead of returning.
+
+
+## Good practices
+
+Try first if the student code works, if it works, it works. Only if
+the code does *not* work, try to understand why.
