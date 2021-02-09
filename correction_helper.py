@@ -281,7 +281,11 @@ def compare(my, theirs):
                 hint = ""
                 trailer = ""
                 if t != theirs:
-                    trailer = _("Just in case it helps, here's your full output:")
+                    trailer = (
+                        _("Just in case it helps, here's your full output:")
+                        + "\n\n"
+                        + code(theirs)
+                    )
                 if m and t:
                     if t[0] == " " and m[0] != " ":
                         hint = (
