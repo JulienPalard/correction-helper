@@ -112,7 +112,7 @@ so maybe just replace your `print` call by a `return` statement.""",
                 with deadline(timeout):
                     yield run
     except TimeoutError:
-        fail("Your program looks too slow, looks for an infinite loop maybe?")
+        fail("Your program looks too slow, look for an infinite loop maybe?")
     except SystemExit:
         fail(
             """Your program tried to exit,
