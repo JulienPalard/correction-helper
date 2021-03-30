@@ -88,6 +88,7 @@ def student_code(
     print_expect=None,
     print_expect_message="""Your code printed what I expected it to return,
 so maybe just replace your `print` call by a `return` statement.""",
+    too_slow_message="Your program looks too slow, looks like an infinite loop.",
     timeout=1,
 ):
     """Decorator usefull to run student code.
@@ -112,7 +113,7 @@ so maybe just replace your `print` call by a `return` statement.""",
                 with deadline(timeout):
                     yield run
     except TimeoutError:
-        fail("Your program looks too slow, look for an infinite loop maybe?")
+        fail(too_slow_message)
     except SystemExit:
         fail(
             """Your program tried to exit,
