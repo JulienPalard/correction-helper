@@ -191,8 +191,13 @@ friendly_traceback.set_formatter(friendly_traceback_markdown)
 
 
 def run(file, *args):
+    start_hint = ""
     if args:
         args = ["--"] + list(args)
+        start_hint = (
+            "I started it as:\n\n"
+            + code(file + " " + " ".join(shlex.quote(a) for a in args)),
+        )
     try:
         proc = subprocess.run(
             [
@@ -207,10 +212,39 @@ def run(file, *args):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             universal_newlines=True,
+            check=True,
+        )
+    except subprocess.CalledProcessError as err:
+        stdout = stderr = ""
+        if err.stdout:
+            if len(err.stdout) > 1_000:
+                stdout = f"Your code printed {len(err.stdout)} characters before being interrupted."
+            else:
+                stdout = "Your code printed:\n\n" + code(err.stdout)
+        if err.stderr:
+            if len(err.stderr) > 1_000:
+                stdout = f"Your code printed {len(err.stderr)} characters on stderr before being interrupted."
+            else:
+                stdout = "Found this on stderr:\n\n" + code(err.stderr)
+        if err.returncode == -9:
+            fail(
+                "I had to halt your program, sorry...",
+                "It were either too slow, or consuming too much resources.",
+                "Check for an infinite loop maybe?",
+                start_hint,
+                stdout,
+                stderr,
+            )
+        fail(
+            f"Your program exited with the error code: {err.returncode}.",
+            start_hint,
+            stdout,
+            stderr,
         )
     except MemoryError:
         fail(
-            "Your program is eating up all the memory! Check for infinite loops maybe?"
+            "Your program is eating up all the memory! Check for infinite loops maybe?",
+            start_hint,
         )
     if proc.stderr:
         if (
@@ -219,17 +253,6 @@ def run(file, *args):
         ):
             fail(
                 "Don't use the `input` builtin, there's no human to interact with here."
-            )
-        if args:
-            fail(
-                f"""
-While running:
-
-{code(file + " " + " ".join(shlex.quote(a) for a in args))}
-
-Got:
-
-{proc.stderr}"""
             )
         else:
             fail(proc.stderr)
