@@ -1,4 +1,5 @@
 from io import StringIO
+import random
 from pathlib import Path
 import sys
 import gettext
@@ -40,6 +41,20 @@ def fail(*args, sep="\n\n"):
     sys.exit(1)
 
 
+def congrats():
+    """Generates a generic congratulation sentence."""
+    return random.choice(
+        [
+            "Congrats! Your exercise is OK.",
+            "Nice job! Right answer.",
+            "Well done! Correct answer.",
+            "Spot on! Looks good to me!",
+            "Bravo!! Your answer is correct.",
+            "Good!! Correct answer.",
+        ]
+    )
+
+
 def _handle_student_exception(prefix, friendly=False):
     if friendly:
         friendly_traceback.explain_traceback()
@@ -48,6 +63,18 @@ def _handle_student_exception(prefix, friendly=False):
             stderr(prefix, end="\n\n")
         stderr(code("".join(format_exc()), "pytb"))
     sys.exit(1)
+
+
+class Tee(StringIO):
+    """Like tee. (man tee), combining a StringIO and a normal file."""
+
+    def __init__(self, twin, **kwargs):
+        self.twin = twin
+        super().__init__(**kwargs)
+
+    def write(self, s):
+        self.twin.write(indent(s, "    "))
+        super().write(s)
 
 
 class Run:
@@ -98,6 +125,11 @@ so maybe just replace your `print` call by a `return` statement.""",
     - using `exit()`
     - raising an exception (pretty printing it in Markdown)
 
+    print_allowed can take 3 values:
+    - False: Exercise fails with print_prefix if the student prints.
+    - None: prints are allowed, captured, and passed to stdout/stderr.
+    - True: prints are allowed, captured, but not passed to stdout/stderr.
+
     Use as:
     with student_code() as run:
         their_value = their_function(your_argument)
@@ -105,7 +137,10 @@ so maybe just replace your `print` call by a `return` statement.""",
                              # to stdout and stderr (both stripped).
     """
     old_stdin = sys.stdin
-    run = Run(StringIO(), StringIO())
+    if print_allowed is None:
+        run = Run(Tee(sys.stdout), Tee(sys.stderr))
+    else:
+        run = Run(StringIO(), StringIO())
     try:
         sys.stdin = None
         with redirect_stdout(run.stdout):
@@ -128,7 +163,7 @@ else I won't be able to check it."""
         _handle_student_exception(exception_prefix, friendly)
     finally:
         sys.stdin = old_stdin
-    if not print_allowed:
+    if print_allowed is False:
         if run.err or run.out:
             stderr(print_prefix, end="\n\n")
             if run.err:
