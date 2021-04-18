@@ -306,7 +306,7 @@ def code_or_repr(some_string):
         return "\n\n" + code(some_string)
 
 
-def compare(my, theirs):
+def compare(my, theirs, preamble=""):
     """Compare two results: mine (expected to be the right one) and theirs
     (the student output).
 
@@ -322,6 +322,7 @@ def compare(my, theirs):
         if m != t:
             if m is None:
                 fail(
+                    preamble,
                     _("Unexpected line {line}, you gave:").format(line=line)
                     + code_or_repr(t),
                     _("Just in case it helps, here's your full output:"),
@@ -329,6 +330,7 @@ def compare(my, theirs):
                 )
             elif t is None:
                 fail(
+                    preamble,
                     _(
                         "Your output is too short, missing line {line}, I'm expecting:"
                     ).format(line=line)
@@ -355,10 +357,17 @@ def compare(my, theirs):
                             "\n\n" + "(Notice your line ends with a space, not mine.)"
                         )
                 fail(
+                    preamble,
                     _("On line {line} I'm expecting:").format(line=line)
                     + code_or_repr(m),
                     _("You gave:") + code_or_repr(t),
                     hint,
                     trailer,
                 )
-    fail("Looks like a wrong answer, expected:", code(my), "you gave:", code(theirs))
+    fail(
+        preamble,
+        "Looks like a wrong answer, expected:",
+        code(my),
+        "you gave:",
+        code(theirs),
+    )
