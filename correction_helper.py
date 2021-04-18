@@ -16,6 +16,8 @@ import shlex
 import friendly_traceback
 from friendly_traceback import exclude_file_from_traceback
 
+__version__ = "2021.4.12"
+
 friendly_traceback.set_lang(os.environ.get("LANGUAGE", "en"))
 
 exclude_file_from_traceback(__file__)
@@ -360,7 +362,7 @@ def compare(my, theirs, preamble=""):
                     preamble,
                     _("On line {line} I'm expecting:").format(line=line)
                     + code_or_repr(m),
-                    _("You gave:") + code_or_repr(t),
+                    (_("You gave:") + code_or_repr(t)) if t else _("You gave nothing."),
                     hint,
                     trailer,
                 )
