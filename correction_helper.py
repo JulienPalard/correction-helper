@@ -17,7 +17,7 @@ from traceback import format_exc
 import friendly
 from friendly import exclude_file_from_traceback
 
-__version__ = "2021.4.12"
+__version__ = "2021.5"
 
 friendly.set_lang(os.environ.get("LANGUAGE", "en"))
 
@@ -202,7 +202,7 @@ class Section:
 
 MARKDOWN_ITEMS = [
     Section("header", prefix="## "),
-    Section("simulated_python_traceback", highlight="pytb"),
+    Section("shortened_traceback", highlight="pytb"),
     Section("suggest"),
     Section("generic"),
     Section("parsing_error"),
