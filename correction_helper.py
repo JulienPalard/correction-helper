@@ -14,12 +14,12 @@ from pathlib import Path
 from textwrap import indent
 from traceback import format_exc
 
-import friendly_traceback
-from friendly_traceback import exclude_file_from_traceback
+import friendly
+from friendly import exclude_file_from_traceback
 
 __version__ = "2021.4.12"
 
-friendly_traceback.set_lang(os.environ.get("LANGUAGE", "en"))
+friendly.set_lang(os.environ.get("LANGUAGE", "en"))
 
 exclude_file_from_traceback(__file__)
 
@@ -60,14 +60,14 @@ def congrats():
     )
 
 
-def _handle_student_exception(prefix=None, friendly=False):
+def _handle_student_exception(prefix=None, use_friendly=False):
     """Handle a student exception.
 
     Can preprend an optional prefix, and can use friendly to display
     friendly explanation.
     """
-    if friendly:
-        friendly_traceback.explain_traceback()
+    if use_friendly:
+        friendly.explain_traceback()
     else:
         if prefix:
             print_stderr(prefix, end="\n\n")
@@ -124,7 +124,7 @@ def deadline(timeout=1):
 @contextmanager
 def student_code(  # pylint: disable=too-many-arguments,too-many-branches
     exception_prefix="Got an exception:",
-    friendly=True,
+    use_friendly=True,
     print_allowed=False,
     print_prefix="Your code printed something (it should **not**):",
     print_expect=None,
@@ -172,10 +172,10 @@ else I won't be able to check it."""
         )
     except RuntimeError as err:
         if "lost sys.stdin" not in str(err):
-            _handle_student_exception(exception_prefix, friendly)
+            _handle_student_exception(exception_prefix, use_friendly)
         fail("Don't use the `input` builtin, there's no human to interact with here.")
     except:  # noqa  pylint: disable=bare-except
-        _handle_student_exception(exception_prefix, friendly)
+        _handle_student_exception(exception_prefix, use_friendly)
     finally:
         sys.stdin = old_stdin
     if print_allowed is False:
@@ -241,7 +241,7 @@ def friendly_traceback_markdown(
     return "\n".join(result)
 
 
-friendly_traceback.set_formatter(friendly_traceback_markdown)
+friendly.set_formatter(friendly_traceback_markdown)
 
 
 def run(file, *args):  # pylint: disable=too-many-branches
@@ -258,7 +258,7 @@ def run(file, *args):  # pylint: disable=too-many-branches
             [
                 "python3",
                 "-m",
-                "friendly_traceback",
+                "friendly",
                 "--formatter",
                 "correction_helper.friendly_traceback_markdown",
                 file,
