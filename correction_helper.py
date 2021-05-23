@@ -2,6 +2,7 @@
 import gettext
 import os
 import random
+import resource
 import shlex
 import signal
 import subprocess
@@ -17,7 +18,7 @@ from traceback import format_exc
 import friendly
 from friendly import exclude_file_from_traceback
 
-__version__ = "2021.5"
+__version__ = "2021.5.1"
 
 friendly.set_lang(os.environ.get("LANGUAGE", "en"))
 
@@ -156,27 +157,37 @@ so maybe just replace your `print` call by a `return` statement.""",
         capture = Run(Tee(sys.stdout), Tee(sys.stderr))
     else:
         capture = Run(StringIO(), StringIO())
+    old_soft, old_hard = resource.getrlimit(resource.RLIMIT_AS)
+    resource.setrlimit(  # 1GB should be enough for anybody
+        resource.RLIMIT_AS, (1024 ** 4, old_hard)
+    )
     try:
         sys.stdin = None
         with redirect_stdout(capture.stdout):
             with redirect_stderr(capture.stderr):
                 with deadline(timeout):
                     yield capture
+                resource.setrlimit(resource.RLIMIT_AS, (old_soft, old_hard))
     except TimeoutError:
+        resource.setrlimit(resource.RLIMIT_AS, (old_soft, old_hard))
         fail(too_slow_message)
     except SystemExit:
+        resource.setrlimit(resource.RLIMIT_AS, (old_soft, old_hard))
         fail(
             """Your program tried to exit,
 remove any `exit()` or `sys.exit()` from your code,
 else I won't be able to check it."""
         )
     except RuntimeError as err:
+        resource.setrlimit(resource.RLIMIT_AS, (old_soft, old_hard))
         if "lost sys.stdin" not in str(err):
             _handle_student_exception(exception_prefix, use_friendly)
         fail("Don't use the `input` builtin, there's no human to interact with here.")
     except:  # noqa  pylint: disable=bare-except
+        resource.setrlimit(resource.RLIMIT_AS, (old_soft, old_hard))
         _handle_student_exception(exception_prefix, use_friendly)
     finally:
+        resource.setrlimit(resource.RLIMIT_AS, (old_soft, old_hard))
         sys.stdin = old_stdin
     if print_allowed is False:
         if capture.err or capture.out:
