@@ -18,7 +18,7 @@ from traceback import format_exc
 import friendly
 from friendly import exclude_file_from_traceback
 
-__version__ = "2021.5.1"
+__version__ = "2021.5.2"
 
 friendly.set_lang(os.environ.get("LANGUAGE", "en"))
 
@@ -159,7 +159,7 @@ so maybe just replace your `print` call by a `return` statement.""",
         capture = Run(StringIO(), StringIO())
     old_soft, old_hard = resource.getrlimit(resource.RLIMIT_AS)
     resource.setrlimit(  # 1GB should be enough for anybody
-        resource.RLIMIT_AS, (1024 ** 4, old_hard)
+        resource.RLIMIT_AS, (1024 ** 3, old_hard)
     )
     try:
         sys.stdin = None
