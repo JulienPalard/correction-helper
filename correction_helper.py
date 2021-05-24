@@ -18,7 +18,7 @@ from traceback import format_exc
 import friendly
 from friendly import exclude_file_from_traceback
 
-__version__ = "2021.5.2"
+__version__ = "2021.5.3"
 
 friendly.set_lang(os.environ.get("LANGUAGE", "en"))
 
@@ -260,9 +260,8 @@ def run(file, *args):  # pylint: disable=too-many-branches
     start_hint = ""
     if args:
         args = ["--"] + list(args)
-        start_hint = (
-            "I started it as:\n\n"
-            + code(file + " " + " ".join(shlex.quote(a) for a in args)),
+        start_hint = "I started it as:\n\n" + code(
+            file + " " + " ".join(shlex.quote(a) for a in args)
         )
     try:
         proc = subprocess.run(
