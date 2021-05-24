@@ -259,10 +259,10 @@ def run(file, *args):  # pylint: disable=too-many-branches
     """subprocess.run wrapper specialized to run Python with friendly."""
     start_hint = ""
     if args:
-        args = ["--"] + list(args)
         start_hint = "I started it as:\n\n" + code(
             file + " " + " ".join(shlex.quote(a) for a in args)
         )
+        args = ["--"] + list(args)
     try:
         proc = subprocess.run(
             [
