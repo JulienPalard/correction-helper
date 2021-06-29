@@ -16,10 +16,10 @@ from textwrap import indent
 from traceback import format_exc
 from typing import Union
 
-import friendly
-from friendly import exclude_file_from_traceback
+import friendly_traceback as friendly
+from friendly_traceback import exclude_file_from_traceback
 
-__version__ = "2021.6"
+__version__ = "2021.6.1"
 
 friendly.set_lang(os.environ.get("LANGUAGE", "en"))
 
