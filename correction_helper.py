@@ -14,11 +14,12 @@ from itertools import zip_longest
 from pathlib import Path
 from textwrap import indent
 from traceback import format_exc
+from typing import Union
 
 import friendly
 from friendly import exclude_file_from_traceback
 
-__version__ = "2021.5.3"
+__version__ = "2021.6"
 
 friendly.set_lang(os.environ.get("LANGUAGE", "en"))
 
@@ -208,7 +209,7 @@ class Section:
     name: str
     prefix: str = ""
     suffix: str = ""
-    highlight: str = ""
+    highlight: Union[str, bool] = False
 
 
 MARKDOWN_ITEMS = [
@@ -222,12 +223,10 @@ MARKDOWN_ITEMS = [
     Section("cause"),
     Section("last_call_header", prefix="### "),
     Section("last_call_source", highlight="text"),
-    Section("last_call_variables_header", prefix="#### "),
-    Section("last_call_variables", highlight="text"),
+    Section("last_call_variables", highlight=True),
     Section("exception_raised_header", prefix="### "),
     Section("exception_raised_source", highlight="text"),
-    Section("exception_raised_variables_header", prefix="#### "),
-    Section("exception_raised_variables", highlight="text"),
+    Section("exception_raised_variables", highlight=True),
 ]
 
 
@@ -236,7 +235,6 @@ def friendly_traceback_markdown(
 ):  # pylint: disable=unused-argument
     """Traceback formatted with full information but with markdown syntax."""
     result = []
-
     for item in MARKDOWN_ITEMS:
         if item.name in info:
             line = info[item.name]
@@ -246,7 +244,9 @@ def friendly_traceback_markdown(
                 line = line.replace("Simulated Traceback", "Traceback")
             if item.prefix[:1] == "#":
                 line = line.rstrip(": ")  # Do not end titles with column
-            if item.highlight:
+            if item.highlight is True:
+                line = indent(line, "    ")
+            elif item.highlight:
                 line = "    :::" + item.highlight + "\n" + indent(line, "    ")
             result.append(item.prefix + line + item.suffix + "\n\n")
     return "\n".join(result)
