@@ -19,7 +19,7 @@ from typing import Union
 import friendly_traceback as friendly
 from friendly_traceback import exclude_file_from_traceback
 
-__version__ = "2021.6.1"
+__version__ = "2021.11"
 
 friendly.set_lang(os.environ.get("LANGUAGE", "en"))
 
@@ -231,13 +231,14 @@ MARKDOWN_ITEMS = [
 
 
 def friendly_traceback_markdown(
-    info, level=None, include=None
-):  # pylint: disable=unused-argument
+    info: friendly.typing.Info,
+    include: friendly.typing.InclusionChoice = None,  # pylint: disable=unused-argument
+) -> str:
     """Traceback formatted with full information but with markdown syntax."""
     result = []
     for item in MARKDOWN_ITEMS:
         if item.name in info:
-            line = info[item.name]
+            line = info[item.name]  # type: ignore
             if not isinstance(line, str):
                 line = "\n".join(line)
             if item.name == "simulated_python_traceback":
@@ -247,7 +248,7 @@ def friendly_traceback_markdown(
             if item.highlight is True:
                 line = indent(line, "    ")
             elif item.highlight:
-                line = "    :::" + item.highlight + "\n" + indent(line, "    ")
+                line = "    :::" + str(item.highlight) + "\n" + indent(line, "    ")
             result.append(item.prefix + line + item.suffix + "\n\n")
     return "\n".join(result)
 
@@ -276,6 +277,7 @@ def run(file, *args):  # pylint: disable=too-many-branches
             ],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            stdin=subprocess.DEVNULL,
             universal_newlines=True,
             check=True,
         )
@@ -315,9 +317,8 @@ def run(file, *args):  # pylint: disable=too-many-branches
             start_hint,
         )
     if proc.stderr:
-        if (
-            "EOF when reading a line" in proc.stderr
-            and "input" in Path(file).read_text()
+        if "EOF when reading a line" in proc.stderr and "input" in Path(file).read_text(
+            encoding="UTF-8"
         ):
             fail(
                 "Don't use the `input` builtin, there's no human to interact with here."

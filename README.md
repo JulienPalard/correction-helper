@@ -36,35 +36,7 @@ with student_code():
     their_function()
 ```
 
-Here is a more complete example:
-
-```python
-from correction_helper import fail, student_code
-
-with student_code():
-    # Here, if the import fail, if the student prints, or try to exit,
-    # it will be reported with a nice message in Markdown, and your process
-    # will exit with code 1.
-    from solution import missing_card
-
-
-def check_deck(deck, expected):
-    with student_code(print_expect=expected):
-        # Here, if the function raises, if the student prints, or try to exit,
-        # it will be reported too, and exit with code 1 too.
-        # If the student prints what is expected to be returned
-        # (the `print_expect` parameter), we told that, too.
-        missing = missing_card(deck)
-    if missing != expected:
-        fail(f"""With the following deck (missing card is `{expected}`):
-
-{code(deck, "text")}
-
-You're returning:
-
-{code(missing, "text")}
-""")
-```
+Find a more complete example in the `examples/` directory.
 
 
 ## Allowed parameters for `student_code`, and their default values
