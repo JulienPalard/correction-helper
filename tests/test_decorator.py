@@ -1,5 +1,5 @@
 import pytest
-from correction_helper import student_code
+from correction_helper import student_code, code
 
 
 def test_student_code(capsys):
@@ -56,6 +56,33 @@ def test_student_code_print_passthrue(capsys):
     assert (
         err
         == """Your code printed:
+
+    :::text
+    Hello world
+"""
+    )
+    assert not out
+
+
+def test_student_code_print_prefix_as_list_or_paragraphs(capsys):
+    with student_code(
+        print_allowed=None,
+        print_prefix=[
+            "Your function, called as:",
+            code("example(call)", "python"),
+            "printed:",
+        ],
+    ):
+        print("Hello world")
+    out, err = capsys.readouterr()
+    assert (
+        err
+        == """Your function, called as:
+
+    :::python
+    example(call)
+
+printed:
 
     :::text
     Hello world

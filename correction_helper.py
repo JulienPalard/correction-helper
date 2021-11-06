@@ -19,7 +19,7 @@ from typing import Union
 import friendly_traceback as friendly
 from friendly_traceback import exclude_file_from_traceback
 
-__version__ = "2021.11.1"
+__version__ = "2021.11.2"
 
 friendly.set_lang(os.environ.get("LANGUAGE", "en"))
 
@@ -171,6 +171,8 @@ else I won't be able to check it."""
         resource.setrlimit(resource.RLIMIT_AS, (old_soft, old_hard))
         sys.stdin = old_stdin
     if capture.err or capture.out:
+        if isinstance(print_prefix, list):
+            print_prefix = "\n\n".join(print_prefix)
         if print_allowed is False or print_allowed is None:
             print_stderr(print_prefix, end="\n\n")
             if capture.err:
