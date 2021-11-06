@@ -49,11 +49,16 @@ def test_student_code_during_print_check(capsys):
     assert not out
 
 
-def test_student_code_expect(capsys):
-    with pytest.raises(SystemExit):
-        with student_code(print_allowed=False, print_expect="Coucou"):
-            print("Coucou")
+def test_student_code_print_passthrue(capsys):
+    with student_code(print_allowed=None, print_prefix="Your code printed:"):
+        print("Hello world")
     out, err = capsys.readouterr()
-    assert "Coucou" in err
-    assert "printed what I expected" in err
+    assert (
+        err
+        == """Your code printed:
+
+    :::text
+    Hello world
+"""
+    )
     assert not out

@@ -19,7 +19,7 @@ from typing import Union
 import friendly_traceback as friendly
 from friendly_traceback import exclude_file_from_traceback
 
-__version__ = "2021.11"
+__version__ = "2021.11.1"
 
 friendly.set_lang(os.environ.get("LANGUAGE", "en"))
 
@@ -77,20 +77,6 @@ def _handle_student_exception(prefix=None, use_friendly=False):
     sys.exit(1)
 
 
-class Tee(StringIO):
-    """Like tee. (man tee), combining a StringIO and a normal file."""
-
-    def __init__(self, twin, **kwargs):
-        """Build this StringIO with a twin StringIO attached to it."""
-        self.twin = twin
-        super().__init__(**kwargs)
-
-    def write(self, s):
-        """Write to this StringIO and its twin."""
-        self.twin.write(indent(s, "    "))
-        super().write(s)
-
-
 class Run:
     """Representation for a program or function run storing stdout and stderr."""
 
@@ -129,9 +115,6 @@ def student_code(  # pylint: disable=too-many-arguments,too-many-branches
     use_friendly=True,
     print_allowed=False,
     print_prefix="Your code printed something (it should **not**):",
-    print_expect=None,
-    print_expect_message="""Your code printed what I expected it to return,
-so maybe just replace your `print` call by a `return` statement.""",
     too_slow_message="Your program looks too slow, looks like an infinite loop.",
     timeout=1,
 ):
@@ -154,10 +137,7 @@ so maybe just replace your `print` call by a `return` statement.""",
                              # to stdout and stderr (both stripped).
     """
     old_stdin = sys.stdin
-    if print_allowed is None:
-        capture = Run(Tee(sys.stdout), Tee(sys.stderr))
-    else:
-        capture = Run(StringIO(), StringIO())
+    capture = Run(StringIO(), StringIO())
     old_soft, old_hard = resource.getrlimit(resource.RLIMIT_AS)
     resource.setrlimit(  # 1GB should be enough for anybody
         resource.RLIMIT_AS, (1024 ** 3, old_hard)
@@ -190,16 +170,15 @@ else I won't be able to check it."""
     finally:
         resource.setrlimit(resource.RLIMIT_AS, (old_soft, old_hard))
         sys.stdin = old_stdin
-    if print_allowed is False:
-        if capture.err or capture.out:
+    if capture.err or capture.out:
+        if print_allowed is False or print_allowed is None:
             print_stderr(print_prefix, end="\n\n")
             if capture.err:
                 print_stderr(code(capture.err, language="text"))
             if capture.out:
                 print_stderr(code(capture.out, language="text"))
-            if print_expect and capture.out == print_expect:
-                print_stderr(print_expect_message, end="\n\n")
-            sys.exit(1)
+            if print_allowed is False:
+                sys.exit(1)
 
 
 @dataclass

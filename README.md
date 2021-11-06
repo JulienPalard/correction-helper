@@ -65,25 +65,14 @@ assert run.stderr == ""
 assert run.stdout == "42"
 ```
 
+`print_allowed` can be set to `None` meaning "neither allowed nor
+really denied": the student output will be printed along with the
+`print_prefix`, but it's not considered a failure.
+
+
 ### `print_prefix="Your code printed something (it should **not**):"`
 
 Message to display when they printed and `print_allowed` was `False`.
-
-
-### `print_expect=None`
-
-String that you bet they'll print instead of return.
-
-
-### `print_expect_message`
-
-Default value:
-
-> Your code printed what I expected it to return
-> so maybe just replace your `print` call by a `return` statement.
-
-This is the message displayed when you won you bet with
-`print_expect`, they printed instead of returning.
 
 
 ## Good practices
