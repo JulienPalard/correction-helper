@@ -24,9 +24,9 @@ def test_student_code_no_print(capsys):
             print("Coucou")
     assert run.out == "Coucou"
     out, err = capsys.readouterr()
-    assert "Your code printed" in err
-    assert "Coucou" in err
-    assert not out
+    assert "Your code printed" in out
+    assert "Coucou" in out
+    assert not err
 
 
 def test_not_die_on_no_print(capsys):
@@ -50,23 +50,23 @@ def test_student_code_during_print_check(capsys):
 
 
 def test_student_code_print_passthrue(capsys):
-    with student_code(print_allowed=None, print_prefix="Your code printed:"):
+    with student_code(print_allowed=True, print_prefix="Your code printed:"):
         print("Hello world")
     out, err = capsys.readouterr()
     assert (
-        err
+        out
         == """Your code printed:
 
     :::text
     Hello world
 """
     )
-    assert not out
+    assert not err
 
 
 def test_student_code_print_prefix_as_list_or_paragraphs(capsys):
     with student_code(
-        print_allowed=None,
+        print_allowed=True,
         print_prefix=[
             "Your function, called as:",
             code("example(call)", "python"),
@@ -76,7 +76,7 @@ def test_student_code_print_prefix_as_list_or_paragraphs(capsys):
         print("Hello world")
     out, err = capsys.readouterr()
     assert (
-        err
+        out
         == """Your function, called as:
 
     :::python
@@ -88,4 +88,4 @@ printed:
     Hello world
 """
     )
-    assert not out
+    assert not err

@@ -53,29 +53,34 @@ To use, or not
 instead of bare Python exceptions.
 
 
-### `print_allowed=False`
+### `print_allowed=True`
 
-To allow the use to print to stdout / stderr, you can read what they
-printed using the value of the context manager:
+To allow or deny the student to print to stdout and stderr.
+
+- `True`: Prints are allowed (and displayed).
+- `None`: Prints are allowed (but not displayed).
+- `False`: Prints are disallowed (and displayed).
+
+In all cases you can read what they printed using the value of the
+context manager:
 
 ```python
-with student_code(print_allowed=True) as run:
+with student_code(print_allowed=None) as run:
     their_function()
 assert run.stderr == ""
 assert run.stdout == "42"
 ```
 
-`print_allowed` can be set to `None` meaning "neither allowed nor
-really denied": the student output will be printed along with the
-`print_prefix`, but it's not considered a failure.
 
+### `print_prefix="Your code printed:"`
 
-### `print_prefix="Your code printed something (it should **not**):"`
+Message to display before the student output in case `print_allowed` is `False` or `None`.
 
-Message to display when they printed and `print_allowed` was `False`.
+It's allowed to give a list of strings, in which case they'll be
+separated by `"\n\n"`, useful to render markdown paragraphs.
 
 
 ## Good practices
 
-Try first if the student code works, if it works, it works. Only if
-the code does *not* work, try to understand why.
+Write the student checking code a you would write unit test for your
+own code.

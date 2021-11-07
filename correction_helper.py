@@ -19,7 +19,7 @@ from typing import Union
 import friendly_traceback as friendly
 from friendly_traceback import exclude_file_from_traceback
 
-__version__ = "2021.11.2"
+__version__ = "2021.11.3"
 
 friendly.set_lang(os.environ.get("LANGUAGE", "en"))
 
@@ -113,8 +113,8 @@ def deadline(timeout=1):
 def student_code(  # pylint: disable=too-many-arguments,too-many-branches
     exception_prefix="Got an exception:",
     use_friendly=True,
-    print_allowed=False,
-    print_prefix="Your code printed something (it should **not**):",
+    print_allowed=True,
+    print_prefix="Your code printed:",
     too_slow_message="Your program looks too slow, looks like an infinite loop.",
     timeout=1,
 ):
@@ -126,9 +126,9 @@ def student_code(  # pylint: disable=too-many-arguments,too-many-branches
     - raising an exception (pretty printing it in Markdown)
 
     print_allowed can take 3 values:
-    - False: Exercise fails with print_prefix if the student prints.
-    - None: prints are allowed, captured, and passed to stdout/stderr.
-    - True: prints are allowed, captured, but not passed to stdout/stderr.
+    - `True`: Prints are allowed (and displayed).
+    - `None`: Prints are allowed (but not displayed).
+    - `False`: Prints are disallowed (and displayed).
 
     Use as:
     with student_code() as run:
@@ -136,6 +136,8 @@ def student_code(  # pylint: disable=too-many-arguments,too-many-branches
     print(run.out, run.err)  # You have access to what they tried to write
                              # to stdout and stderr (both stripped).
     """
+    if isinstance(print_prefix, str):
+        print_prefix = (print_prefix,)
     old_stdin = sys.stdin
     capture = Run(StringIO(), StringIO())
     old_soft, old_hard = resource.getrlimit(resource.RLIMIT_AS)
@@ -170,17 +172,14 @@ else I won't be able to check it."""
     finally:
         resource.setrlimit(resource.RLIMIT_AS, (old_soft, old_hard))
         sys.stdin = old_stdin
-    if capture.err or capture.out:
-        if isinstance(print_prefix, list):
-            print_prefix = "\n\n".join(print_prefix)
-        if print_allowed is False or print_allowed is None:
-            print_stderr(print_prefix, end="\n\n")
-            if capture.err:
-                print_stderr(code(capture.err, language="text"))
-            if capture.out:
-                print_stderr(code(capture.out, language="text"))
-            if print_allowed is False:
-                sys.exit(1)
+    if (capture.err or capture.out) and print_allowed is not None:
+        print(*print_prefix, sep="\n\n", end="\n\n")
+        if capture.err:
+            print(code(capture.err, language="text"))
+        if capture.out:
+            print(code(capture.out, language="text"))
+        if print_allowed is False:
+            sys.exit(1)
 
 
 @dataclass
