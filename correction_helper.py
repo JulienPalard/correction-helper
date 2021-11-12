@@ -19,7 +19,7 @@ from typing import Union
 import friendly_traceback as friendly
 from friendly_traceback import exclude_file_from_traceback
 
-__version__ = "2021.11.3"
+__version__ = "2021.11.4"
 
 friendly.set_lang(os.environ.get("LANGUAGE", "en"))
 
@@ -50,16 +50,34 @@ def fail(*args, sep="\n\n"):
 
 def congrats():
     """Generate a generic congratulation sentence."""
-    return random.choice(
-        [
-            "Congrats! Your exercise is OK.",
-            "Nice job! Right answer.",
-            "Well done! Correct answer.",
-            "Spot on! Looks good to me!",
-            "Bravo!! Your answer is correct.",
-            "Good!! Correct answer.",
+    if os.environ.get("LANGUAGE", "") == "fr":
+        begin = ["Joli", "Bravo", "Bon boulot", "Bien joué", "Super", "Génial", "Bien"]
+        end = [
+            "Belle implèmentation",
+            "Bonne réponse",
+            "C'est juste",
+            "C'est bon pour moi",
+            "Cette réponse est correcte",
+            "C'est correct",
         ]
-    )
+        sep = " "
+    else:
+        begin = ["Congrats", "Nice job", "Well done", "Spot on", "Bravo", "Good"]
+        end = [
+            "Your exercise is OK",
+            "Right answer",
+            "Looks good to me",
+            "Your answer is correct",
+            "Correct answer",
+        ]
+        sep = ""
+    return " ".join(
+        [
+            random.choice(begin) + sep + "!" * random.randint(1, 5),
+            random.choice(end) + sep + "!" * random.randint(1, 5),
+            random.choice("     🚀🎉🙌🏆🥇🎯💯"),
+        ]
+    ).strip()
 
 
 def _handle_student_exception(prefix=None, use_friendly=False):
