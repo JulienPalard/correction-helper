@@ -13,13 +13,12 @@ from io import StringIO
 from itertools import zip_longest
 from pathlib import Path
 from textwrap import indent
-from traceback import format_exc
-from typing import Union
+from typing import Union, Sequence, Optional
 
 import friendly_traceback as friendly
 from friendly_traceback import exclude_file_from_traceback
 
-__version__ = "2021.11.4"
+__version__ = "2021.11.6"
 
 friendly.set_lang(os.environ.get("LANGUAGE", "en"))
 
@@ -80,18 +79,16 @@ def congrats():
     ).strip()
 
 
-def _handle_student_exception(prefix=None, use_friendly=False):
+def _handle_student_exception(prefix: Optional[Sequence[str]] = None):
     """Handle a student exception.
 
-    Can preprend an optional prefix, and can use friendly to display
-    friendly explanation.
+    Can preprend an optional prefix.
+
+    Use friendly to display a friendly explanation.
     """
-    if use_friendly:
-        friendly.explain_traceback()
-    else:
-        if prefix:
-            print_stderr(prefix, end="\n\n")
-        print_stderr(code("".join(format_exc()), "pytb"))
+    if prefix:
+        print_stderr(*prefix, sep="\n\n", end="\n\n")
+    friendly.explain_traceback()
     sys.exit(1)
 
 
@@ -129,8 +126,9 @@ def deadline(timeout=1):
 
 @contextmanager
 def student_code(  # pylint: disable=too-many-arguments,too-many-branches
-    exception_prefix="Got an exception:",
-    use_friendly=True,
+    *,
+    prefix=(),
+    exception_prefix="I got an exception:",
     print_allowed=True,
     print_prefix="Your code printed:",
     too_slow_message="Your program looks too slow, looks like an infinite loop.",
@@ -148,14 +146,24 @@ def student_code(  # pylint: disable=too-many-arguments,too-many-branches
     - `None`: Prints are allowed (but not displayed).
     - `False`: Prints are disallowed (and displayed).
 
+    `prefix`, if given, is always prefixed to `print_prefix` and
+    `exception_prefix` helping to deduplicate strings.
+
     Use as:
     with student_code() as run:
         their_value = their_function(your_argument)
     print(run.out, run.err)  # You have access to what they tried to write
                              # to stdout and stderr (both stripped).
+
     """
     if isinstance(print_prefix, str):
         print_prefix = (print_prefix,)
+    if isinstance(exception_prefix, str):
+        exception_prefix = (exception_prefix,)
+    if isinstance(prefix, str):
+        prefix = (prefix,)
+    print_prefix = tuple(prefix) + tuple(print_prefix)
+    exception_prefix = tuple(prefix) + tuple(exception_prefix)
     old_stdin = sys.stdin
     capture = Run(StringIO(), StringIO())
     old_soft, old_hard = resource.getrlimit(resource.RLIMIT_AS)
@@ -182,11 +190,11 @@ else I won't be able to check it."""
     except RuntimeError as err:
         resource.setrlimit(resource.RLIMIT_AS, (old_soft, old_hard))
         if "lost sys.stdin" not in str(err):
-            _handle_student_exception(exception_prefix, use_friendly)
+            _handle_student_exception(exception_prefix)
         fail("Don't use the `input` builtin, there's no human to interact with here.")
     except:  # noqa  pylint: disable=bare-except
         resource.setrlimit(resource.RLIMIT_AS, (old_soft, old_hard))
-        _handle_student_exception(exception_prefix, use_friendly)
+        _handle_student_exception(exception_prefix)
     finally:
         resource.setrlimit(resource.RLIMIT_AS, (old_soft, old_hard))
         sys.stdin = old_stdin

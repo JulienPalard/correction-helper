@@ -41,9 +41,36 @@ Find a more complete example in the `examples/` directory.
 
 ## Allowed parameters for `student_code`, and their default values
 
-### `exception_prefix="Got an exception:"`
+### `exception_prefix="I got an exception:"`
 
 Printed right before the exception, if any.
+
+It's allowed to give a list of strings, in which case they'll be
+separated by `"\n\n"`, useful to render markdown paragraphs.
+
+
+### `print_prefix="Your code printed:"`
+
+Message to display before the student prints (in case `print_allowed`
+is `False` or `None`).
+
+It's allowed to give a list of strings, in which case they'll be
+separated by `"\n\n"`, useful to render markdown paragraphs.
+
+
+### `prefix=()`
+
+A prefix for `print_prefix` and `exception_prefix`, usefull to
+deduplicate strings, like:
+
+```python
+with student_code(
+    prefix="While calling blahblah('bar')",
+    print_prefix="it printed:",
+    exception_prefix="it raised:"
+):
+    blahblah('bar')
+```
 
 
 ### `friendly=False`
@@ -70,14 +97,6 @@ with student_code(print_allowed=None) as run:
 assert run.stderr == ""
 assert run.stdout == "42"
 ```
-
-
-### `print_prefix="Your code printed:"`
-
-Message to display before the student output in case `print_allowed` is `False` or `None`.
-
-It's allowed to give a list of strings, in which case they'll be
-separated by `"\n\n"`, useful to render markdown paragraphs.
 
 
 ## Good practices
