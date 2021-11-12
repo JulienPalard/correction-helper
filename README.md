@@ -58,16 +58,25 @@ It's allowed to give a list of strings, in which case they'll be
 separated by `"\n\n"`, useful to render markdown paragraphs.
 
 
+### `too_slow_message="Your program looks too slow, looks like an infinite loop."`
+
+Message to display in case the code runs slower than the given `timeout` (defaults to 1s).
+
+It's allowed to give a list of strings, in which case they'll be
+separated by `"\n\n"`, useful to render markdown paragraphs.
+
+
 ### `prefix=()`
 
-A prefix for `print_prefix` and `exception_prefix`, usefull to
-deduplicate strings, like:
+A prefix for `print_prefix`, `exception_prefix`, and
+`too_slow_message=`, usefull to deduplicate strings, like:
 
 ```python
 with student_code(
     prefix="While calling blahblah('bar')",
     print_prefix="it printed:",
-    exception_prefix="it raised:"
+    exception_prefix="it raised:",
+    too_slow_message="it took more than 1s, had to kill it.",
 ):
     blahblah('bar')
 ```

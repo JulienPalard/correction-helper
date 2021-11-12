@@ -13,12 +13,12 @@ from io import StringIO
 from itertools import zip_longest
 from pathlib import Path
 from textwrap import indent
-from typing import Union, Sequence, Optional
+from typing import Union, Sequence, Optional, Tuple
 
 import friendly_traceback as friendly
 from friendly_traceback import exclude_file_from_traceback
 
-__version__ = "2021.11.6"
+__version__ = "2021.11.7"
 
 friendly.set_lang(os.environ.get("LANGUAGE", "en"))
 
@@ -124,6 +124,20 @@ def deadline(timeout=1):
     signal.alarm(0)
 
 
+def _prepare_message(
+    prefix: Union[Sequence[str], str], message: Union[Sequence[str], str]
+) -> Tuple[str, ...]:
+    if isinstance(prefix, str):
+        prefix = (prefix,)
+    else:
+        prefix = tuple(prefix)
+    if isinstance(message, str):
+        message = (message,)
+    else:
+        message = tuple(message)
+    return prefix + message
+
+
 @contextmanager
 def student_code(  # pylint: disable=too-many-arguments,too-many-branches
     *,
@@ -156,14 +170,10 @@ def student_code(  # pylint: disable=too-many-arguments,too-many-branches
                              # to stdout and stderr (both stripped).
 
     """
-    if isinstance(print_prefix, str):
-        print_prefix = (print_prefix,)
-    if isinstance(exception_prefix, str):
-        exception_prefix = (exception_prefix,)
-    if isinstance(prefix, str):
-        prefix = (prefix,)
-    print_prefix = tuple(prefix) + tuple(print_prefix)
-    exception_prefix = tuple(prefix) + tuple(exception_prefix)
+    exception_prefix = _prepare_message(prefix, exception_prefix)
+    print_prefix = _prepare_message(prefix, print_prefix)
+    too_slow_message = _prepare_message(prefix, too_slow_message)
+
     old_stdin = sys.stdin
     capture = Run(StringIO(), StringIO())
     old_soft, old_hard = resource.getrlimit(resource.RLIMIT_AS)
@@ -179,7 +189,7 @@ def student_code(  # pylint: disable=too-many-arguments,too-many-branches
                 resource.setrlimit(resource.RLIMIT_AS, (old_soft, old_hard))
     except TimeoutError:
         resource.setrlimit(resource.RLIMIT_AS, (old_soft, old_hard))
-        fail(too_slow_message)
+        fail(*too_slow_message)
     except SystemExit:
         resource.setrlimit(resource.RLIMIT_AS, (old_soft, old_hard))
         fail(
