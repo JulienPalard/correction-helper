@@ -15,12 +15,12 @@ from pathlib import Path
 from textwrap import indent
 from typing import Union, Sequence, Optional, Tuple
 
-import friendly_traceback as friendly
+import friendly_traceback
 from friendly_traceback import exclude_file_from_traceback
 
-__version__ = "2021.11.7"
+__version__ = "2021.11.8"
 
-friendly.set_lang(os.environ.get("LANGUAGE", "en"))
+friendly_traceback.set_lang(os.environ.get("LANGUAGE", "en"))
 
 exclude_file_from_traceback(__file__)
 
@@ -88,7 +88,7 @@ def _handle_student_exception(prefix: Optional[Sequence[str]] = None):
     """
     if prefix:
         print_stderr(*prefix, sep="\n\n", end="\n\n")
-    friendly.explain_traceback()
+    friendly_traceback.explain_traceback()
     sys.exit(1)
 
 
@@ -247,8 +247,8 @@ MARKDOWN_ITEMS = [
 
 
 def friendly_traceback_markdown(
-    info: friendly.typing.Info,
-    include: friendly.typing.InclusionChoice = None,  # pylint: disable=unused-argument
+    info: friendly_traceback.typing_info.Info,
+    include: friendly_traceback.typing_info.InclusionChoice = None,  # pylint: disable=unused-argument
 ) -> str:
     """Traceback formatted with full information but with markdown syntax."""
     result = []
@@ -269,7 +269,7 @@ def friendly_traceback_markdown(
     return "\n".join(result)
 
 
-friendly.set_formatter(friendly_traceback_markdown)
+friendly_traceback.set_formatter(friendly_traceback_markdown)
 
 
 def run(file, *args):  # pylint: disable=too-many-branches
