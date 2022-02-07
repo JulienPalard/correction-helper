@@ -178,7 +178,7 @@ def student_code(  # pylint: disable=too-many-arguments,too-many-branches
     capture = Run(StringIO(), StringIO())
     old_soft, old_hard = resource.getrlimit(resource.RLIMIT_AS)
     resource.setrlimit(  # 1GB should be enough for anybody
-        resource.RLIMIT_AS, (1024 ** 3, old_hard)
+        resource.RLIMIT_AS, (1024**3, old_hard)
     )
     try:
         sys.stdin = None
@@ -301,17 +301,22 @@ def run(file, *args):  # pylint: disable=too-many-branches
         stdout = stderr = ""
         if err.stdout:
             if len(err.stdout) > 1_000:
-                stdout = f"Your code printed {len(err.stdout)} characters before being interrupted."
+                stdout = (
+                    f"Your code printed {len(err.stdout)} "
+                    "characters before being interrupted:\n\n"
+                    + code(err.stdout[:256] + "\n…truncated…\n" + err.stdout[-256:])
+                )
             else:
                 stdout = "Your code printed:\n\n" + code(err.stdout)
         if err.stderr:
             if len(err.stderr) > 1_000:
-                stdout = (
+                stderr = (
                     f"Your code printed {len(err.stderr)} "
-                    "characters on stderr before being interrupted."
+                    "characters on stderr before being interrupted:\n\n"
+                    + code(err.stderr[:256] + "\n…truncated…\n" + err.stderr[-256:])
                 )
             else:
-                stdout = "Found this on stderr:\n\n" + code(err.stderr)
+                stderr = "Found this on stderr:\n\n" + code(err.stderr)
         if err.returncode == -9:
             fail(
                 "I had to halt your program, sorry...",
