@@ -103,8 +103,8 @@ context manager:
 ```python
 with student_code(print_allowed=None) as run:
     their_function()
-assert run.stderr == ""
-assert run.stdout == "42"
+assert run.err == ""
+assert run.out == "42"
 ```
 
 
