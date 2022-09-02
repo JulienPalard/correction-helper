@@ -281,7 +281,6 @@ def truncate(string):
     return string[:512] + f"\n…({len(string)-1024} truncated chars)…\n" + string[-512:]
 
 
-
 def run(file, *args):  # pylint: disable=too-many-branches
     """subprocess.run wrapper specialized to run Python with friendly."""
     start_hint = ""
@@ -295,7 +294,7 @@ def run(file, *args):  # pylint: disable=too-many-branches
             [
                 "python3",
                 "-m",
-                "friendly",
+                "friendly_traceback",
                 "--formatter",
                 "correction_helper.friendly_traceback_markdown",
                 file,
