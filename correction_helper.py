@@ -18,7 +18,7 @@ from typing import Union, Sequence, Optional, Tuple
 import friendly_traceback
 from friendly_traceback import exclude_file_from_traceback
 
-__version__ = "2022.2"
+__version__ = "2022.9"
 
 friendly_traceback.set_lang(os.environ.get("LANGUAGE", "en"))
 
