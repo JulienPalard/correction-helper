@@ -272,6 +272,16 @@ def friendly_traceback_markdown(
 friendly_traceback.set_formatter(friendly_traceback_markdown)
 
 
+def truncate(string):
+    """May truncate string if it's too long."""
+    if os.environ.get("CORRECTION_HELPER_NO_TRUNCATE"):
+        return string
+    if len(string) < 4096:
+        return string
+    return string[:512] + f"\n…({len(string)-1024} truncated chars)…\n" + string[-512:]
+
+
+
 def run(file, *args):  # pylint: disable=too-many-branches
     """subprocess.run wrapper specialized to run Python with friendly."""
     start_hint = ""
@@ -300,23 +310,9 @@ def run(file, *args):  # pylint: disable=too-many-branches
     except subprocess.CalledProcessError as err:
         stdout = stderr = ""
         if err.stdout:
-            if len(err.stdout) > 1_000:
-                stdout = (
-                    f"Your code printed {len(err.stdout)} "
-                    "characters before being interrupted:\n\n"
-                    + code(err.stdout[:256] + "\n…truncated…\n" + err.stdout[-256:])
-                )
-            else:
-                stdout = "Your code printed:\n\n" + code(err.stdout)
+            stdout = "Your code printed:\n\n" + code(truncate(err.stdout))
         if err.stderr:
-            if len(err.stderr) > 1_000:
-                stderr = (
-                    f"Your code printed {len(err.stderr)} "
-                    "characters on stderr before being interrupted:\n\n"
-                    + code(err.stderr[:256] + "\n…truncated…\n" + err.stderr[-256:])
-                )
-            else:
-                stderr = "Found this on stderr:\n\n" + code(err.stderr)
+            stderr = "Found this on stderr:\n\n" + code(truncate(err.stderr))
         if err.returncode == -9:
             fail(
                 "I had to halt your program, sorry...",
