@@ -43,7 +43,7 @@ def fail(*args, sep="\n\n"):
     By default, if multiple args are given, they are separated by two
     newlines, usefull to build Markdown paragraphs.
     """
-    admonition("callout callout-failure", sep.join(args))
+    admonition("failure", sep.join(args))
     sys.exit(1)
 
 
@@ -287,7 +287,7 @@ def print_allowed(message="Your code printed:"):
 
 
 def print_to_admonition(
-    admonition_type="callout callout-info",
+    admonition_type="info",
     header="For your information, when I imported your module it printed:",
 ):
     """To be used as print_hook, renders prints as a Markdown admonition.
