@@ -1,5 +1,7 @@
 """Set of tools to help writing correction bots in Python for Python."""
+import ast
 import gettext
+import inspect
 import os
 import random
 import resource
@@ -45,6 +47,23 @@ def fail(*args, sep="\n\n"):
     """
     admonition("failure", sep.join(args))
     sys.exit(1)
+
+
+def get_parent_body(frame):
+    """Give with-block caller code.
+
+    Given an `inspect.currentframe()` from a __init__ or__enter__,
+    returns the source code of the body of the caller.
+    """
+    parent_frame = frame.f_back
+    info = inspect.getframeinfo(parent_frame)
+    for node in ast.walk(ast.parse(inspect.getsource(parent_frame))):
+        try:
+            if info.lineno == node.lineno:
+                break
+        except AttributeError:
+            pass
+    return ast.unparse(node.body)
 
 
 def congrats():
@@ -125,26 +144,27 @@ def deadline(timeout=1):
 
 
 def _prepare_message(
-    prefix: Union[Sequence[str], str], message: Union[Sequence[str], str, None] = None
+    prefix: Union[Sequence[str], str, None],
+    message: Union[Sequence[str], str, None] = None,
 ) -> Tuple[str, ...]:
     if isinstance(prefix, str):
         prefix = (prefix,)
     else:
         prefix = tuple(prefix)
+
     if message is None:
         return prefix
     if isinstance(message, str):
-        message = (message,)
+        return prefix + (message,)
     else:
-        message = tuple(message)
-    return prefix + message
+        return prefix + tuple(message)
 
 
 @contextmanager
 def student_code(  # pylint: disable=too-many-arguments,too-many-branches
     *,
     prefix=(),
-    exception_prefix="I got an exception:",
+    exception_prefix=None,
     print_allowed=True,  # pylint: disable=redefined-outer-name
     print_hook=None,
     print_prefix="Your code printed:",
@@ -158,26 +178,19 @@ def student_code(  # pylint: disable=too-many-arguments,too-many-branches
     - using `exit()`
     - raising an exception (pretty printing it in Markdown)
 
-    print_allowed can take 3 values:
-    - `True`: Prints are allowed (and displayed).
-    - `None`: Prints are allowed (but not displayed).
-    - `False`: Prints are disallowed (and displayed).
-
-    print_hook, if given, take precedence over print_allowed:
-    print_hook is simply called with what the code printed as arguments, like:
+    `print_hook` is simply called with what the code printed as arguments, like:
 
         print_hook(run.out, run.err)
 
-    Typical usage:
+    Typical usages with already implemented hooks:
+
         print_hook=print_allowed()
         print_hook=print_denied()
         print_hook=print_to_admonition()
+        print_hook=print_silent()
 
     (Check the optional arguments to print_allowed, print_denied, and
     print_to_admonition to personalize the messages.)
-
-    `prefix`, if given, is always prefixed to `print_prefix` and
-    `exception_prefix` helping to deduplicate strings.
 
     Use as:
     with student_code() as run:
@@ -186,10 +199,16 @@ def student_code(  # pylint: disable=too-many-arguments,too-many-branches
                              # to stdout and stderr (both stripped).
 
     """
+    source = get_parent_body(inspect.currentframe().f_back)
+    if exception_prefix is None:
+        exception_prefix = [
+            "While testing:",
+            code(source, "python"),
+            "I got an exception:",
+        ]
     exception_prefix = _prepare_message(prefix, exception_prefix)
     print_prefix = _prepare_message(prefix, print_prefix)
     too_slow_message = _prepare_message(prefix, too_slow_message)
-
     old_stdin = sys.stdin
     capture = Run(StringIO(), StringIO())
     old_soft, old_hard = resource.getrlimit(resource.RLIMIT_AS)
@@ -253,7 +272,7 @@ def print_denied(message="Your code printed:"):
 
     def print_cb(out, err):
         if err or out:
-            print(message, sep="\n\n", end="\n\n")
+            print(*message, sep="\n\n", end="\n\n")
             if err:
                 print(code(err))
             if out:
@@ -288,7 +307,7 @@ def print_allowed(message="Your code printed:"):
 
     def print_cb(out, err):
         if err or out:
-            print(message, sep="\n\n", end="\n\n")
+            print(*message, sep="\n\n", end="\n\n")
         if err:
             print(code(err))
         if out:
@@ -297,10 +316,7 @@ def print_allowed(message="Your code printed:"):
     return print_cb
 
 
-def print_to_admonition(
-    admonition_type="info",
-    header="Your code printed:",
-):
+def print_to_admonition(message="Your code printed:", admonition_type="info"):
     """To be used as print_hook, renders prints as a Markdown admonition.
 
     >>> with student_code(print_hook=print_to_admonition("info", "FYI it printed:")):
@@ -312,9 +328,10 @@ def print_to_admonition(
             :::text
             42
     """
+    message = _prepare_message(message)
     return lambda out, err: admonition(
         admonition_type,
-        header,
+        "\n\n".join(message),
         code(out + "\n" + err),
     )
 
