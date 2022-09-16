@@ -263,6 +263,17 @@ def print_denied(message="Your code printed:"):
     return print_cb
 
 
+def print_silent():
+    """To be used as print_hook to silence prints.
+
+    >>> with student_code(print_hook=print_allowed("Your function printed:")) as run:
+    ...     print(42)
+    >>> print(run.out)
+    42
+    """
+    return lambda out, err: ...
+
+
 def print_allowed(message="Your code printed:"):
     """To be used as print_hook to allow prints.
 
