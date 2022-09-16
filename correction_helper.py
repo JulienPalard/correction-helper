@@ -43,7 +43,7 @@ def fail(*args, sep="\n\n"):
     By default, if multiple args are given, they are separated by two
     newlines, usefull to build Markdown paragraphs.
     """
-    print_stderr(sep.join(args))
+    admonition("callout callout-failure", sep.join(args))
     sys.exit(1)
 
 
