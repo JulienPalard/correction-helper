@@ -288,7 +288,7 @@ def print_allowed(message="Your code printed:"):
 
 def print_to_admonition(
     admonition_type="info",
-    header="For your information, when I imported your module it printed:",
+    header="Your code printed:",
 ):
     """To be used as print_hook, renders prints as a Markdown admonition.
 
