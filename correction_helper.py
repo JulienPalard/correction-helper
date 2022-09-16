@@ -13,7 +13,7 @@ from io import StringIO
 from itertools import zip_longest
 from pathlib import Path
 from textwrap import indent
-from typing import Union, Sequence, Optional, Tuple
+from typing import Optional, Sequence, Tuple, Union
 
 import friendly_traceback
 from friendly_traceback import exclude_file_from_traceback
@@ -125,12 +125,14 @@ def deadline(timeout=1):
 
 
 def _prepare_message(
-    prefix: Union[Sequence[str], str], message: Union[Sequence[str], str]
+    prefix: Union[Sequence[str], str], message: Union[Sequence[str], str, None] = None
 ) -> Tuple[str, ...]:
     if isinstance(prefix, str):
         prefix = (prefix,)
     else:
         prefix = tuple(prefix)
+    if message is None:
+        return prefix
     if isinstance(message, str):
         message = (message,)
     else:
@@ -143,7 +145,8 @@ def student_code(  # pylint: disable=too-many-arguments,too-many-branches
     *,
     prefix=(),
     exception_prefix="I got an exception:",
-    print_allowed=True,
+    print_allowed=True,  # pylint: disable=redefined-outer-name
+    print_hook=None,
     print_prefix="Your code printed:",
     too_slow_message="Your program looks too slow, looks like an infinite loop.",
     timeout=1,
@@ -159,6 +162,19 @@ def student_code(  # pylint: disable=too-many-arguments,too-many-branches
     - `True`: Prints are allowed (and displayed).
     - `None`: Prints are allowed (but not displayed).
     - `False`: Prints are disallowed (and displayed).
+
+    print_hook, if given, take precedence over print_allowed:
+    print_hook is simply called with what the code printed as arguments, like:
+
+        print_hook(run.out, run.err)
+
+    Typical usage:
+        print_hook=print_allowed()
+        print_hook=print_denied()
+        print_hook=print_to_admonition()
+
+    (Check the optional arguments to print_allowed, print_denied, and
+    print_to_admonition to personalize the messages.)
 
     `prefix`, if given, is always prefixed to `print_prefix` and
     `exception_prefix` helping to deduplicate strings.
@@ -208,14 +224,100 @@ else I won't be able to check it."""
     finally:
         resource.setrlimit(resource.RLIMIT_AS, (old_soft, old_hard))
         sys.stdin = old_stdin
-    if (capture.err or capture.out) and print_allowed is not None:
-        print(*print_prefix, sep="\n\n", end="\n\n")
-        if capture.err:
-            print(code(capture.err, language="text"))
-        if capture.out:
-            print(code(capture.out, language="text"))
-        if print_allowed is False:
+    if capture.err or capture.out:
+        if print_hook:
+            print_hook(capture.out, capture.err)
+        elif print_allowed is not None:
+            print(*print_prefix, sep="\n\n", end="\n\n")
+            if capture.err:
+                print(code(capture.err, language="text"))
+            if capture.out:
+                print(code(capture.out, language="text"))
+            if print_allowed is False:
+                sys.exit(1)
+
+
+def print_denied(message="Your code printed:"):
+    """To be used as print_hook to deny prints.
+
+    >>> with student_code(print_hook=print_denied("Your function printed:")):
+    ...     print(42)
+    Your function printed:
+
+        :::text
+        42
+
+    (Then exit with an error code of 1 if the student has printed.)
+    """
+    message = _prepare_message(message)
+
+    def print_cb(out, err):
+        if err or out:
+            print(message, sep="\n\n", end="\n\n")
+            if err:
+                print(code(err))
+            if out:
+                print(code(out))
             sys.exit(1)
+
+    return print_cb
+
+
+def print_allowed(message="Your code printed:"):
+    """To be used as print_hook to allow prints.
+
+    >>> with student_code(print_hook=print_allowed("Your function printed:")):
+    ...     print(42)
+    Your function printed:
+
+        :::text
+        42
+    """
+    message = _prepare_message(message)
+
+    def print_cb(out, err):
+        if err or out:
+            print(message, sep="\n\n", end="\n\n")
+        if err:
+            print(code(err))
+        if out:
+            print(code(out))
+
+    return print_cb
+
+
+def print_to_admonition(
+    admonition_type="hkis-callout hkis-callout-info",
+    header="For your information, when I imported your module it printed:",
+):
+    """To be used as print_hook, renders prints as a Markdown admonition.
+
+    >>> with student_code(print_hook=print_to_admonition("info", "FYI it printed:")):
+    ...     print(42)
+    !!! info ""
+
+        FYI it printed:
+
+            :::text
+            42
+    """
+    return lambda out, err: admonition(
+        admonition_type,
+        header,
+        code(out + "\n" + err),
+    )
+
+
+def admonition(admonition_type, *body, title=""):
+    """Build a Markdown Admonition.
+
+    >>> admonition("note", "Hello world.")
+    !!! note ""
+        Hello world.
+    """
+    print(f'!!! {admonition_type} "{title}"\n')
+    for item in body:
+        print(indent(item, "    "), end="\n\n")
 
 
 @dataclass
