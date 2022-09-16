@@ -4,6 +4,7 @@ import gettext
 import inspect
 import os
 import random
+import re
 import resource
 import shlex
 import signal
@@ -14,7 +15,7 @@ from dataclasses import dataclass
 from io import StringIO
 from itertools import zip_longest
 from pathlib import Path
-from textwrap import indent
+from textwrap import indent, dedent
 from typing import Optional, Sequence, Tuple, Union
 
 import friendly_traceback
@@ -49,21 +50,31 @@ def fail(*args, sep="\n\n"):
     sys.exit(1)
 
 
-def get_parent_body(frame):
-    """Give with-block caller code.
-
-    Given an `inspect.currentframe()` from a __init__ or__enter__,
-    returns the source code of the body of the caller.
-    """
-    parent_frame = frame.f_back
-    info = inspect.getframeinfo(parent_frame)
-    for node in ast.walk(ast.parse(inspect.getsource(parent_frame))):
+def get_parent_body():
+    """Find and return with-block caller code."""
+    frame = inspect.currentframe()
+    while frame.f_back:
+        frame = frame.f_back
+        info = inspect.getframeinfo(frame)
+        code_start_at = frame.f_code.co_firstlineno
+        source = inspect.getsource(frame).splitlines()
+        with_line = source[info.lineno - code_start_at]
+        if with_line.lstrip().startswith("with "):
+            break
+    else:
+        return None
+    for node in ast.walk(ast.parse("\n".join(source))):
         try:
-            if info.lineno == node.lineno:
+            if (
+                isinstance(node, ast.With)
+                and info.lineno == node.lineno + code_start_at - 1
+            ):
                 break
         except AttributeError:
             pass
-    return ast.unparse(node.body)
+    else:
+        return None
+    return dedent("\n".join(source[node.body[0].lineno - 1 : node.body[-1].end_lineno]))
 
 
 def congrats():
@@ -199,7 +210,7 @@ def student_code(  # pylint: disable=too-many-arguments,too-many-branches
                              # to stdout and stderr (both stripped).
 
     """
-    source = get_parent_body(inspect.currentframe().f_back)
+    source = get_parent_body()
     if exception_prefix is None:
         exception_prefix = [
             "While testing:",
