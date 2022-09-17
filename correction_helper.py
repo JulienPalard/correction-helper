@@ -144,7 +144,7 @@ def _prepare_message(
 def student_code(  # pylint: disable=too-many-arguments,too-many-branches
     *,
     prefix=(),
-    exception_prefix="I got an exception:",
+    exception_prefix="",
     print_allowed=True,  # pylint: disable=redefined-outer-name
     print_hook=None,
     print_prefix="Your code printed:",
