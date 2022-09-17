@@ -50,6 +50,15 @@ def fail(*args, sep="\n\n"):
     sys.exit(1)
 
 
+def all_used_arguments(frame, source):
+    for node in ast.walk(ast.parse(source)):
+        if isinstance(node, ast.Call):
+            for arg in node.args:
+                if isinstance(arg, ast.Name):
+                    print(arg.id)
+                    breakpoint()
+
+
 def get_parent_body():
     """Find and return with-block caller code."""
     frame = inspect.currentframe()
@@ -74,7 +83,11 @@ def get_parent_body():
             pass
     else:
         return None
-    return dedent("\n".join(source[node.body[0].lineno - 1 : node.body[-1].end_lineno]))
+    with_body = dedent(
+        "\n".join(source[node.body[0].lineno - 1 : node.body[-1].end_lineno])
+    )
+    all_used_arguments(frame, with_body)
+    return with_body
 
 
 def congrats():

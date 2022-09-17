@@ -15,8 +15,8 @@ class GetMyCode:
 
 def test_single_line():
     with GetMyCode() as code:
-        print("Coucou")
-    assert code.source == 'print("Coucou")'
+        print(test_single_line)
+    assert code.source == "print(test_single_line)"
 
 
 def test_multiline():
@@ -26,7 +26,8 @@ def test_multiline():
     with GetMyCode() as code:
         a = 5
         b = a
-    assert code.source == "a = 5\nb = a"
+        print(a, b)
+    assert code.source == "a = 5\nb = a\nprint(a, b)"
 
 
 def test_args_indented():
@@ -38,7 +39,8 @@ def test_args_indented():
     ) as code:
         a = 5
         b = a
-    assert code.source == "a = 5\nb = a"
+        print(a, b)
+    assert code.source == "a = 5\nb = a\nprint(a, b)"
 
 
 def test_args_indented_under_an_if():
