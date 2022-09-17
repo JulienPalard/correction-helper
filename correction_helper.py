@@ -253,7 +253,7 @@ def print_denied(message="Your code printed:"):
 
     def print_cb(out, err):
         if err or out:
-            print(message, sep="\n\n", end="\n\n")
+            print(*message, sep="\n\n", end="\n\n")
             if err:
                 print(code(err))
             if out:
@@ -288,7 +288,7 @@ def print_allowed(message="Your code printed:"):
 
     def print_cb(out, err):
         if err or out:
-            print(message, sep="\n\n", end="\n\n")
+            print(*message, sep="\n\n", end="\n\n")
         if err:
             print(code(err))
         if out:
@@ -297,10 +297,7 @@ def print_allowed(message="Your code printed:"):
     return print_cb
 
 
-def print_to_admonition(
-    admonition_type="info",
-    header="Your code printed:",
-):
+def print_to_admonition(header="Your code printed:", admonition_type="info"):
     """To be used as print_hook, renders prints as a Markdown admonition.
 
     >>> with student_code(print_hook=print_to_admonition("info", "FYI it printed:")):
@@ -312,6 +309,8 @@ def print_to_admonition(
             :::text
             42
     """
+    if not isinstance(header, str):
+        header = "\n\n".join(header)
     return lambda out, err: admonition(
         admonition_type,
         header,
@@ -328,7 +327,7 @@ def admonition(admonition_type, *body, title=""):
     """
     print(f'!!! {admonition_type} "{title}"\n')
     for item in body:
-        print(indent(item, "    "), end="\n\n")
+        print(indent(item, "    "), sep="\n\n", end="\n\n")
 
 
 @dataclass
