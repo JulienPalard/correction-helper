@@ -18,7 +18,7 @@ from typing import Optional, Sequence, Tuple, Union
 import friendly_traceback
 from friendly_traceback import exclude_file_from_traceback
 
-__version__ = "2023.5"
+__version__ = "2023.6"
 
 friendly_traceback.set_lang(os.environ.get("LANGUAGE", "en"))
 
@@ -404,7 +404,7 @@ def run(file, *args):  # pylint: disable=too-many-branches
     try:
         proc = subprocess.run(
             [
-                "python3",
+                sys.executable,
                 "-m",
                 "friendly_traceback",
                 "--formatter",
