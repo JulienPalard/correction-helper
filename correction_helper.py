@@ -393,7 +393,9 @@ def truncate(string):
     return string[:512] + f"\n…({len(string)-1024} truncated chars)…\n" + string[-512:]
 
 
-def run(file, *args, input=None):  # pylint: disable=too-many-branches
+def run(
+    file, *args, input=None
+):  # pylint: disable=too-many-branches, redefined-builtin
     """subprocess.run wrapper specialized to run Python with friendly."""
     if input is not None:
         kwargs = {"input": input}
