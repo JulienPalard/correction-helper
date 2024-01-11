@@ -18,7 +18,7 @@ from typing import Optional, Sequence, Tuple, Union
 import friendly_traceback
 from friendly_traceback import exclude_file_from_traceback
 
-__version__ = "2023.6"
+__version__ = "2024.1"
 
 friendly_traceback.set_lang(os.environ.get("LANGUAGE", "en"))
 
@@ -393,8 +393,12 @@ def truncate(string):
     return string[:512] + f"\n…({len(string)-1024} truncated chars)…\n" + string[-512:]
 
 
-def run(file, *args):  # pylint: disable=too-many-branches
+def run(file, *args, input=None):  # pylint: disable=too-many-branches
     """subprocess.run wrapper specialized to run Python with friendly."""
+    if input is not None:
+        kwargs = {"input": input}
+    else:
+        kwargs = {"stdin": subprocess.DEVNULL}
     start_hint = ""
     if args:
         start_hint = "I started it as:\n\n" + code(
@@ -414,9 +418,9 @@ def run(file, *args):  # pylint: disable=too-many-branches
             ],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            stdin=subprocess.DEVNULL,
             universal_newlines=True,
             check=True,
+            **kwargs,
         )
     except subprocess.CalledProcessError as err:
         stdout = stderr = ""
@@ -445,14 +449,7 @@ def run(file, *args):  # pylint: disable=too-many-branches
             start_hint,
         )
     if proc.stderr:
-        if "EOF when reading a line" in proc.stderr and "input" in Path(file).read_text(
-            encoding="UTF-8"
-        ):
-            fail(
-                "Don't use the `input` builtin, there's no human to interact with here."
-            )
-        else:
-            fail(proc.stderr)
+        fail(proc.stderr)
     return proc.stdout.rstrip()
 
 
