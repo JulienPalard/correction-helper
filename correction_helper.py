@@ -52,7 +52,7 @@ def congrats():
     if os.environ.get("LANGUAGE", "") == "fr":
         begin = ["Joli", "Bravo", "Bon boulot", "Bien joué", "Super", "Génial", "Bien"]
         end = [
-            "Belle implèmentation",
+            "Belle implémentation",
             "Bonne réponse",
             "C'est juste",
             "C'est bon pour moi",
