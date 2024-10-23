@@ -1,4 +1,5 @@
 """Set of tools to help writing correction bots in Python for Python."""
+
 import gettext
 import os
 import random
@@ -25,6 +26,35 @@ friendly_traceback.set_lang(os.environ.get("LANGUAGE", "en"))
 exclude_file_from_traceback(__file__)
 
 _ = gettext.translation("check", Path(__file__).parent, fallback=True).gettext
+
+
+CFLAGS = (  # For those correcting C code.
+    "-std=c99",
+    "-O2",  # Helps -fanalyzer
+    "-pedantic",
+    "-pedantic-errors",
+    "-Wall",
+    "-Wbad-function-cast",
+    "-Wcast-align=strict",
+    "-Wcast-qual",
+    "-Werror",
+    "-Wextra",
+    "-Wfloat-equal",
+    "-Wformat=2",
+    "-Winit-self",
+    "-Winline",
+    "-Wlogical-op",
+    "-Wnested-externs",
+    "-Wredundant-decls",
+    "-Wshadow",
+    "-Wstrict-aliasing",
+    "-Wstrict-overflow=3",  # Needs -O
+    "-Wstrict-prototypes",
+    "-Wundef",
+    "-Wuninitialized",
+    "-Wwrite-strings",
+    "-fanalyzer",
+)
 
 
 def code(text, language="text"):
