@@ -67,21 +67,13 @@ def print_stderr(*args, **kwargs):
     print(*args, **kwargs, file=sys.stderr)
 
 
-def fail(*args, sep="\n\n", **kwargs):
+def fail(*args, sep="\n\n"):
     """Print args separated by sep as a Markdown failure admonition.
 
     By default, if multiple args are given, they are separated by two
     newlines, usefull to build Markdown paragraphs.
-
-    **kwargs can be used to format the string:
-
-        fail("Your code printed: {stdout}!", stdout=stdout)
-
-    Which plays nicely with gettext:
-
-        fail(_("Your code printed: {stdout}!"), stdout=stdout)
     """
-    admonition("failure", sep.join(args).format(**kwargs))
+    admonition("failure", sep.join(args))
     sys.exit(1)
 
 
