@@ -19,7 +19,7 @@ from typing import Optional, Sequence, Tuple, Union
 import friendly_traceback
 from friendly_traceback import exclude_file_from_traceback
 
-__version__ = "2024.1"
+__version__ = "2024.10"
 
 friendly_traceback.set_lang(os.environ.get("LANGUAGE", "en"))
 
@@ -67,13 +67,21 @@ def print_stderr(*args, **kwargs):
     print(*args, **kwargs, file=sys.stderr)
 
 
-def fail(*args, sep="\n\n"):
-    """Print args on stderror and exit with failure (code=1).
+def fail(*args, sep="\n\n", **kwargs):
+    """Print args separated by sep as a Markdown failure admonition.
 
     By default, if multiple args are given, they are separated by two
     newlines, usefull to build Markdown paragraphs.
+
+    **kwargs can be used to format the string:
+
+        fail("Your code printed: {stdout}!", stdout=stdout)
+
+    Which plays nicely with gettext:
+
+        fail(_("Your code printed: {stdout}!"), stdout=stdout)
     """
-    admonition("failure", sep.join(args))
+    admonition("failure", sep.join(args).format(**kwargs))
     sys.exit(1)
 
 
