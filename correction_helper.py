@@ -423,34 +423,20 @@ def truncate(string):
     return string[:512] + f"\n…({len(string)-1024} truncated chars)…\n" + string[-512:]
 
 
-def run(
-    file, *args, input=None
-):  # pylint: disable=too-many-branches, redefined-builtin
-    """subprocess.run wrapper specialized to run Python with friendly."""
-    if input is not None:
-        kwargs = {"input": input}
-    else:
-        kwargs = {"stdin": subprocess.DEVNULL}
+def _run(file, *args, **kwargs):  # pylint: disable=too-many-branches
+    """subprocess.run wrapper explaining failure cases."""
+    if kwargs.get("input") is None and "stdin" not in kwargs:
+        kwargs["stdin"] = subprocess.DEVNULL
     start_hint = ""
     if args:
         start_hint = "I started it as:\n\n" + code(
             file + " " + " ".join(shlex.quote(a) for a in args)
         )
-        args = ["--"] + list(args)
     try:
         proc = subprocess.run(
-            [
-                sys.executable,
-                "-m",
-                "friendly_traceback",
-                "--formatter",
-                "correction_helper.friendly_traceback_markdown",
-                file,
-                *args,
-            ],
+            [file, *args],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            universal_newlines=True,
             check=True,
             **kwargs,
         )
@@ -482,7 +468,26 @@ def run(
         )
     if proc.stderr:
         fail(proc.stderr)
-    return proc.stdout.rstrip()
+    return proc.stdout
+
+
+def run(file, *args, input=None):
+    """subprocess.run wrapper specialized to run Python with friendly."""
+    return _run(
+        sys.executable,
+        "-m",
+        "friendly_traceback",
+        "--formatter",
+        "correction_helper.friendly_traceback_markdown",
+        file,
+        "--",
+        *args,
+        text=True,
+        input=input,
+    ).rstrip()
+
+
+run_py = run
 
 
 def code_or_repr(some_string):
@@ -550,9 +555,11 @@ def compare(expected, theirs, preamble=""):
                     preamble,
                     _("On line {line} I'm expecting:").format(line=line)
                     + code_or_repr(expected_line),
-                    (_("You gave:") + code_or_repr(their_line))
-                    if their_line
-                    else _("You gave nothing."),
+                    (
+                        (_("You gave:") + code_or_repr(their_line))
+                        if their_line
+                        else _("You gave nothing.")
+                    ),
                     hint,
                     trailer,
                 )
