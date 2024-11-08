@@ -19,7 +19,7 @@ from typing import Optional, Sequence, Tuple, Union
 import friendly_traceback
 from friendly_traceback import exclude_file_from_traceback
 
-__version__ = "2024.14"
+__version__ = "2024.15"
 
 friendly_traceback.set_lang(os.environ.get("LANGUAGE", "en"))
 
@@ -470,7 +470,12 @@ def _run(file, *args, **kwargs):  # pylint: disable=too-many-branches
         )
     if proc.stderr:
         fail(proc.stderr)
-    return proc.stdout
+    return proc.stdout.rstrip()
+
+
+def run(file, *args, **kwargs):
+    """subprocess.run wrapper, not specialized."""
+    return _run(file, *args, **kwargs)
 
 
 def run_py(file, *args, **kwargs):
@@ -486,15 +491,12 @@ def run_py(file, *args, **kwargs):
         *args,
         **kwargs,
         text=True,
-    ).rstrip()
+    )
 
 
 def run_c(file, *args, **kwargs):
     """subprocess.run wrapper specialized to run C with valgrind."""
-    return _run("valgrind", "-q", file, *args, **kwargs).rstrip()
-
-
-run = run_py
+    return _run("valgrind", "-q", file, *args, **kwargs)
 
 
 def code_or_repr(some_string):
