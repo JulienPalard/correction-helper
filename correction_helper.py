@@ -19,7 +19,7 @@ from typing import Optional, Sequence, Tuple, Union
 import friendly_traceback
 from friendly_traceback import exclude_file_from_traceback
 
-__version__ = "2024.12"
+__version__ = "2024.13"
 
 friendly_traceback.set_lang(os.environ.get("LANGUAGE", "en"))
 
@@ -473,7 +473,7 @@ def _run(file, *args, **kwargs):  # pylint: disable=too-many-branches
     return proc.stdout
 
 
-def run(file, *args, input=None):  # pylint: disable=redefined-builtin
+def run_py(file, *args, input=None):  # pylint: disable=redefined-builtin
     """subprocess.run wrapper specialized to run Python with friendly."""
     return _run(
         sys.executable,
@@ -489,7 +489,11 @@ def run(file, *args, input=None):  # pylint: disable=redefined-builtin
     ).rstrip()
 
 
-run_py = run
+def run_c(file, *args, input=None):  # pylint: disable=redefined-builtin
+    return _run("valgrind", "-q", file, *args, text=True, input=input).rstrip()
+
+
+run = run_py
 
 
 def code_or_repr(some_string):
