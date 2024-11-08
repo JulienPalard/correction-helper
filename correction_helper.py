@@ -19,7 +19,7 @@ from typing import Optional, Sequence, Tuple, Union
 import friendly_traceback
 from friendly_traceback import exclude_file_from_traceback
 
-__version__ = "2024.10"
+__version__ = "2024.12"
 
 friendly_traceback.set_lang(os.environ.get("LANGUAGE", "en"))
 
@@ -59,7 +59,7 @@ CFLAGS = (  # For those correcting C code.
 
 def code(text, language="text"):
     """Transform given text as a Markdown code block."""
-    return "    :::" + language + "\n" + indent(str(text), "    ")
+    return "    :::" + language + "\n" + indent(str(text)[: 2**16], "    ")
 
 
 def print_stderr(*args, **kwargs):
