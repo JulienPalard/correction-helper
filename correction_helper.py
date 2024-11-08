@@ -19,7 +19,7 @@ from typing import Optional, Sequence, Tuple, Union
 import friendly_traceback
 from friendly_traceback import exclude_file_from_traceback
 
-__version__ = "2024.13"
+__version__ = "2024.14"
 
 friendly_traceback.set_lang(os.environ.get("LANGUAGE", "en"))
 
@@ -390,9 +390,9 @@ MARKDOWN_ITEMS = [
 
 def friendly_traceback_markdown(
     info: friendly_traceback.typing_info.Info,
-    include: (  # pylint: disable=unused-argument
-        friendly_traceback.typing_info.InclusionChoice | None
-    ) = None,
+    include: Optional[  # pylint: disable=unused-argument
+        friendly_traceback.typing_info.InclusionChoice
+    ] = None,
 ) -> str:
     """Traceback formatted with full information but with markdown syntax."""
     result = []
@@ -473,7 +473,7 @@ def _run(file, *args, **kwargs):  # pylint: disable=too-many-branches
     return proc.stdout
 
 
-def run_py(file, *args, input=None):  # pylint: disable=redefined-builtin
+def run_py(file, *args, **kwargs):
     """subprocess.run wrapper specialized to run Python with friendly."""
     return _run(
         sys.executable,
@@ -484,13 +484,14 @@ def run_py(file, *args, input=None):  # pylint: disable=redefined-builtin
         file,
         "--",
         *args,
+        **kwargs,
         text=True,
-        input=input,
     ).rstrip()
 
 
-def run_c(file, *args, input=None):  # pylint: disable=redefined-builtin
-    return _run("valgrind", "-q", file, *args, text=True, input=input).rstrip()
+def run_c(file, *args, **kwargs):
+    """subprocess.run wrapper specialized to run C with valgrind."""
+    return _run("valgrind", "-q", file, *args, **kwargs).rstrip()
 
 
 run = run_py
