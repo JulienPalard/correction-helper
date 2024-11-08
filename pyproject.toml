@@ -35,3 +35,32 @@ include-package-data = false
 version = {attr = "correction_helper.__version__"}
 
 [tool.black]
+
+[tool.tox]
+envlist = ["py38", "py39", "py310", "py311", "py312", "mypy", "black", "pydocstyle", "pylint", "isort"]
+skip_missing_interpreters = true
+
+[tool.tox.env_run_base]
+description = "Run test under {base_python}"
+deps = ["pytest", "hypothesis"]
+commands = [["pytest"]]
+
+[tool.tox.env.mypy]
+deps = ["mypy"]
+commands = [["mypy", "--ignore-missing-imports", "correction_helper.py"]]
+
+[tool.tox.env.black]
+deps = ["black"]
+commands = [["black", "--check", "--diff", "correction_helper.py"]]
+
+[tool.tox.env.pylint]
+deps = ["pylint"]
+commands = [["pylint", "correction_helper.py"]]
+
+[tool.tox.env.pydocstyle]
+deps = ["pydocstyle"]
+commands = [["pydocstyle", "correction_helper.py"]]
+
+[tool.tox.env.isort]
+deps = ["isort"]
+commands = [["isort", "--check", "--profile=black", "correction_helper.py"]]

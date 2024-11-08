@@ -390,7 +390,9 @@ MARKDOWN_ITEMS = [
 
 def friendly_traceback_markdown(
     info: friendly_traceback.typing_info.Info,
-    include: friendly_traceback.typing_info.InclusionChoice = None,  # pylint: disable=unused-argument
+    include: (  # pylint: disable=unused-argument
+        friendly_traceback.typing_info.InclusionChoice | None
+    ) = None,
 ) -> str:
     """Traceback formatted with full information but with markdown syntax."""
     result = []
@@ -471,7 +473,7 @@ def _run(file, *args, **kwargs):  # pylint: disable=too-many-branches
     return proc.stdout
 
 
-def run(file, *args, input=None):
+def run(file, *args, input=None):  # pylint: disable=redefined-builtin
     """subprocess.run wrapper specialized to run Python with friendly."""
     return _run(
         sys.executable,
