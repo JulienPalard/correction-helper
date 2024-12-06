@@ -19,7 +19,7 @@ from typing import Optional, Sequence, Tuple, Union
 import friendly_traceback
 from friendly_traceback import exclude_file_from_traceback
 
-__version__ = "2024.15"
+__version__ = "2024.16"
 
 friendly_traceback.set_lang(os.environ.get("LANGUAGE", "en"))
 
@@ -425,6 +425,12 @@ def truncate(string):
     return string[:512] + f"\n…({len(string)-1024} truncated chars)…\n" + string[-512:]
 
 
+def to_string(value: str | bytes) -> str:
+    if isinstance(value, bytes):
+        return value.decode("ASCII", "backslashreplace")
+    return value
+
+
 def _run(file, *args, **kwargs):  # pylint: disable=too-many-branches
     """subprocess.run wrapper explaining failure cases."""
     if kwargs.get("input") is None and "stdin" not in kwargs:
@@ -445,9 +451,9 @@ def _run(file, *args, **kwargs):  # pylint: disable=too-many-branches
     except subprocess.CalledProcessError as err:
         stdout = stderr = ""
         if err.stdout:
-            stdout = "Your code printed:\n\n" + code(truncate(err.stdout))
+            stdout = "Your code printed:\n\n" + code(truncate(to_string(err.stdout)))
         if err.stderr:
-            stderr = "Found this on stderr:\n\n" + code(truncate(err.stderr))
+            stderr = "Found this on stderr:\n\n" + code(truncate(to_string(err.stderr)))
         if err.returncode == -9:
             fail(
                 "I had to halt your program, sorry...",
