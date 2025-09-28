@@ -19,7 +19,7 @@ from typing import Optional, Sequence, Tuple, Union
 import friendly_traceback
 from friendly_traceback import exclude_file_from_traceback
 
-__version__ = "2024.16"
+__version__ = "2025.9"
 
 friendly_traceback.set_lang(os.environ.get("LANGUAGE", "en"))
 
@@ -73,6 +73,8 @@ def fail(*args, sep="\n\n"):
     By default, if multiple args are given, they are separated by two
     newlines, usefull to build Markdown paragraphs.
     """
+    if any(isinstance(arg, bytes) for arg in args):
+        args = map(to_string, args)
     admonition("failure", sep.join(args))
     sys.exit(1)
 
@@ -132,13 +134,11 @@ class Run:
 
     @property
     def out(self):
-        """Stdout, stripped."""
-        return self.stdout.getvalue().strip()
+        return self.stdout.getvalue()
 
     @property
     def err(self):
-        """Stderr, stripped."""
-        return self.stderr.getvalue().strip()
+        return self.stderr.getvalue()
 
 
 @contextmanager
@@ -426,6 +426,7 @@ def truncate(string):
 
 
 def to_string(value: str | bytes) -> str:
+    """Ensure the given value is decoded."""
     if isinstance(value, bytes):
         return value.decode("ASCII", "backslashreplace")
     return value
