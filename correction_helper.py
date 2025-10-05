@@ -19,7 +19,7 @@ from typing import Optional, Sequence, Tuple, Union
 import friendly_traceback
 from friendly_traceback import exclude_file_from_traceback
 
-__version__ = "2025.9"
+__version__ = "2025.10"
 
 friendly_traceback.set_lang(os.environ.get("LANGUAGE", "en"))
 
@@ -432,7 +432,12 @@ def to_string(value: str | bytes) -> str:
     return value
 
 
-def _run(file, *args, **kwargs):  # pylint: disable=too-many-branches
+def _run(
+    file,
+    *args,
+    program_exited_message="Your program exited with the error code: {code}",
+    **kwargs,
+):  # pylint: disable=too-many-branches
     """subprocess.run wrapper explaining failure cases."""
     if kwargs.get("input") is None and "stdin" not in kwargs:
         kwargs["stdin"] = subprocess.DEVNULL
@@ -465,7 +470,7 @@ def _run(file, *args, **kwargs):  # pylint: disable=too-many-branches
                 stderr,
             )
         fail(
-            f"Your program exited with the error code: {err.returncode}.",
+            program_exited_message.format(code=err.returncode),
             start_hint,
             stdout,
             stderr,
