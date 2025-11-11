@@ -131,11 +131,13 @@ class Run:
         self.stderr = stderr
 
     @property
-    def out(self):
+    def out(self) -> str:
+        """Give recorded stdout as a string."""
         return self.stdout.getvalue()
 
     @property
-    def err(self):
+    def err(self) -> str:
+        """Give recorded stderr as a string."""
         return self.stderr.getvalue()
 
 
