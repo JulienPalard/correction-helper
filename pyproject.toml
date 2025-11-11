@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61.2"]
+requires = ["setuptools>=61.2", "setuptools-scm[simple]>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -29,9 +29,6 @@ Homepage = "https://github.com/JulienPalard/correction-helper"
 [tool.setuptools]
 py-modules = ["correction_helper"]
 include-package-data = false
-
-[tool.setuptools.dynamic]
-version = {attr = "correction_helper.__version__"}
 
 [tool.black]
 
