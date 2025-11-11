@@ -30,6 +30,9 @@ Homepage = "https://github.com/JulienPalard/correction-helper"
 py-modules = ["correction_helper"]
 include-package-data = false
 
+[tool.isort]
+profile = "black"
+
 [tool.black]
 
 [tool.tox]
@@ -59,4 +62,4 @@ commands = [["pydocstyle", "correction_helper.py"]]
 
 [tool.tox.env.isort]
 deps = ["isort"]
-commands = [["isort", "--check", "--profile=black", "correction_helper.py"]]
+commands = [["isort", "--check", "correction_helper.py"]]
