@@ -1,5 +1,5 @@
 import pytest
-from correction_helper import student_code, code
+from correction_helper import code, student_code
 
 
 def test_student_code(capsys):
@@ -15,17 +15,17 @@ def test_student_code(capsys):
 def test_not_die_on_no_exception():
     with student_code(print_allowed=True) as run:
         print("Coucou")
-    assert run.out == "Coucou"
+    assert run.out == "Coucou\n"
 
 
 def test_student_code_no_print(capsys):
     with pytest.raises(SystemExit):
         with student_code(print_allowed=False) as run:
             print("Coucou")
-    assert run.out == "Coucou"
+    assert run.out == "Coucou\n"
     out, err = capsys.readouterr()
     assert "Your code printed" in out
-    assert "Coucou" in out
+    assert "Coucou\n" in out
     assert not err
 
 
@@ -59,6 +59,7 @@ def test_student_code_print_passthrue(capsys):
 
     :::text
     Hello world
+
 """
     )
     assert not err
@@ -86,6 +87,7 @@ printed:
 
     :::text
     Hello world
+
 """
     )
     assert not err
