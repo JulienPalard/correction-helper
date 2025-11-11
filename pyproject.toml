@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "correction-helper"
 description = "Some helpers to help writing correction bots, use by hackinscience.org."
 authors = [{name = "Julien Palard", email = "julien@palard.fr"}]
-license = {text = "MIT License"}
+license = "MIT"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
