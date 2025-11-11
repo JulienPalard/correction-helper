@@ -502,7 +502,8 @@ def run_py(file, *args, **kwargs):
         "--",
         *args,
         **kwargs,
-        text=True,
+        encoding="UTF-8",
+        errors="backslashreplace",
     )
 
 
