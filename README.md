@@ -26,9 +26,9 @@ To install it, run: `pip install correction-helper`.
 In your checking code, you can use it like this:
 
 
-### The `student_code` decorator
+### The `student_code` context manager
 
-This decorator is aimed to catch most problems that could happen in
+This context manager is aimed to catch most problems that could happen in
 student code, use it simply as:
 
 ```python
