@@ -635,6 +635,7 @@ def ensure_solution_py():
 def run_one(fct, *args):
     """Run fct with args in an isolated process."""
     forking = Forking(timeout=10)
+    forking.exception_hook = friendly_traceback.session.exception_hook
     ensure_solution_py()
     with forking:
         import solution  # pylint: disable=import-outside-toplevel, import-error
@@ -660,6 +661,7 @@ def run_one(fct, *args):
 def run_many(fct, args=None):
     """Run fct many times with args in an isolated process."""
     forking = Forking(timeout=10)
+    forking.exception_hook = friendly_traceback.session.exception_hook
     ensure_solution_py()
     with forking:
         import solution  # pylint: disable=import-outside-toplevel, import-error
