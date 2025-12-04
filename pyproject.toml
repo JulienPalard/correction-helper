@@ -16,6 +16,7 @@ classifiers = [
 requires-python = ">= 3.7"
 dependencies = [
     "friendly-traceback>=0.4.87",
+    "forking>=0.2",
 ]
 dynamic = ["version"]
 

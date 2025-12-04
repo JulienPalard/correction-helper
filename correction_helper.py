@@ -8,7 +8,7 @@ import shlex
 import signal
 import subprocess
 import sys
-from contextlib import contextmanager, redirect_stderr, redirect_stdout
+from contextlib import contextmanager, redirect_stderr, redirect_stdout, suppress
 from dataclasses import dataclass
 from io import StringIO
 from itertools import zip_longest
@@ -17,6 +17,7 @@ from textwrap import indent
 from typing import Optional, Sequence, Tuple, Union
 
 import friendly_traceback
+from forking import Forking
 from friendly_traceback import exclude_file_from_traceback
 
 friendly_traceback.set_lang(os.environ.get("LANGUAGE", "en"))
@@ -26,6 +27,7 @@ exclude_file_from_traceback(__file__)
 _ = gettext.translation("check", Path(__file__).parent, fallback=True).gettext
 
 
+SEPARATOR = "\x1c" * 80
 CFLAGS = (  # For those correcting C code.
     "-std=c99",
     "-O2",  # Helps -fanalyzer
@@ -592,3 +594,81 @@ def compare(expected, theirs, preamble=""):
         "you gave:",
         code(theirs),
     )
+
+
+def consume_output(child, prints=False):
+    """Parse a 'forking' result."""
+    stdout = child.stdout.decode("UTF-8", "backslashreplace")
+    stderr = child.stderr.decode("UTF-8", "backslashreplace")
+
+    if "ImportError" in stderr:
+        fail(
+            _("Cannot import your function, is it declared properly?"),
+            _("Got:"),
+            stderr,
+        )
+    if stderr:
+        fail(stderr)
+    try:
+        at_import, at_runtime = stdout.split(SEPARATOR + "\n", maxsplit=1)
+    except ValueError:
+        at_import, at_runtime = stdout, ""
+    if at_import and prints:
+        print(
+            _("When I imported your module, it printed:"),
+            code(at_import),
+            sep="\n\n",
+        )
+    try:
+        a, b = at_runtime.split(SEPARATOR + "\n", maxsplit=1)
+        return a, b
+    except ValueError:
+        return at_runtime, ""
+
+
+def ensure_solution_py():
+    """Just rename solution to solution.py if needed."""
+    with suppress(FileNotFoundError):
+        Path("solution").rename("solution.py")
+
+
+def run_one(fct, *args):
+    """Run fct with args in an isolated process."""
+    forking = Forking(timeout=10)
+    ensure_solution_py()
+    with forking:
+        import solution  # pylint: disable=import-outside-toplevel, import-error
+
+        function = getattr(solution, fct)
+        print(SEPARATOR)
+        value = function(*args)
+        print(SEPARATOR)
+        print(value, end="")
+
+    stdout, value = consume_output(forking)
+    if stdout:
+        print(
+            _("When I called your function as:").format(fct=fct),
+            code(f"{fct}{args}"),
+            "it printed:",
+            code(stdout),
+            sep="\n\n",
+        )
+    return value
+
+
+def run_many(fct, args=None):
+    """Run fct many times with args in an isolated process."""
+    forking = Forking(timeout=10)
+    ensure_solution_py()
+    with forking:
+        import solution  # pylint: disable=import-outside-toplevel, import-error
+
+        function = getattr(solution, fct)
+        print(SEPARATOR)
+        values = [function(*arg) for arg in args]
+        print(SEPARATOR)
+        print("\n".join(map(repr, values)))
+
+    _stdout, values = consume_output(forking)
+    return values.splitlines()
