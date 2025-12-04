@@ -668,7 +668,7 @@ def run_one(fct, *args):
     if output.during_calls:
         print(
             _("When I called your function as:").format(fct=fct),
-            code(f"{fct}{args}"),
+            code(f"{fct}({", ".join(repr(x) for x in args)})"),
             "it printed:",
             code(output.during_calls),
             sep="\n\n",
