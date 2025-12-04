@@ -596,34 +596,46 @@ def compare(expected, theirs, preamble=""):
     )
 
 
-def consume_output(child, prints=False):
-    """Parse a 'forking' result."""
-    stdout = child.stdout.decode("UTF-8", "backslashreplace")
-    stderr = child.stderr.decode("UTF-8", "backslashreplace")
+@dataclass
+class ForkingOutput:
+    """Represents a typical call block parsed result.
 
-    if "ImportError" in stderr:
-        fail(
-            _("Cannot import your function, is it declared properly?"),
-            _("Got:"),
-            stderr,
-        )
-    if stderr:
-        fail(stderr)
-    try:
-        at_import, at_runtime = stdout.split(SEPARATOR + "\n", maxsplit=1)
-    except ValueError:
-        at_import, at_runtime = stdout, ""
-    if at_import and prints:
-        print(
-            _("When I imported your module, it printed:"),
-            code(at_import),
-            sep="\n\n",
-        )
-    try:
-        a, b = at_runtime.split(SEPARATOR + "\n", maxsplit=1)
-        return a, b
-    except ValueError:
-        return at_runtime, ""
+    with forking:
+        from solution import is_prime
+        print(SEPARATOR)
+        result = is_prime(1)
+        print(SEPARATOR)
+        print(result)
+    """
+
+    at_import: str
+    during_calls: str
+    returned: str
+
+    @classmethod
+    def from_forking(cls, child):
+        """Parse the output of a forking instance."""
+        stdout = child.stdout.decode("UTF-8", "backslashreplace")
+        stderr = child.stderr.decode("UTF-8", "backslashreplace")
+
+        if "ImportError" in stderr:
+            fail(
+                _("Cannot import your function, is it declared properly?"),
+                _("Got:"),
+                stderr,
+            )
+        if stderr:
+            fail(stderr)
+        try:
+            at_import, at_runtime = stdout.split(SEPARATOR + "\n", maxsplit=1)
+        except ValueError:
+            at_import, at_runtime = stdout, ""
+        try:
+            during_calls, returned = at_runtime.split(SEPARATOR + "\n", maxsplit=1)
+        except ValueError:
+            during_calls, returned = at_runtime, ""
+
+        return cls(at_import, during_calls, returned)
 
 
 def ensure_solution_py():
@@ -646,16 +658,22 @@ def run_one(fct, *args):
         print(SEPARATOR)
         print(value, end="")
 
-    stdout, value = consume_output(forking)
-    if stdout:
+    output = ForkingOutput.from_forking(forking)
+    if output.at_import:
+        print(
+            _("When I imported your module, it printed:"),
+            code(output.at_import),
+            sep="\n\n",
+        )
+    if output.during_calls:
         print(
             _("When I called your function as:").format(fct=fct),
             code(f"{fct}{args}"),
             "it printed:",
-            code(stdout),
+            code(output.during_calls),
             sep="\n\n",
         )
-    return value
+    return output.returned
 
 
 def run_many(fct, args=None):
@@ -672,5 +690,5 @@ def run_many(fct, args=None):
         print(SEPARATOR)
         print("\n".join(map(repr, values)))
 
-    _stdout, values = consume_output(forking)
-    return values.splitlines()
+    output = ForkingOutput.from_forking(forking)
+    return output.returned.splitlines()
