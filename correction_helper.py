@@ -1,5 +1,6 @@
 """Set of tools to help writing correction bots in Python for Python."""
 
+import ast
 import gettext
 import os
 import random
@@ -656,7 +657,7 @@ def run_one(fct, *args):
         print(SEPARATOR)
         value = function(*args)
         print(SEPARATOR)
-        print(value, end="")
+        print(repr(value), end="")
 
     output = ForkingOutput.from_forking(forking)
     if output.at_import:
@@ -673,7 +674,17 @@ def run_one(fct, *args):
             code(output.during_calls),
             sep="\n\n",
         )
-    return output.returned
+    try:
+        return ast.literal_eval(output.returned)
+    except (ValueError, TypeError, SyntaxError, MemoryError, RecursionError):
+        fail(
+            "I'm having hard times understanding your function result.",
+            _("I called your function as:").format(fct=fct),
+            code(f"{fct}({", ".join(repr(x) for x in args)})"),
+            "And your function returned:",
+            code(output.returned),
+        )
+        return None  # Unreachable
 
 
 def run_many(fct, args=None):
@@ -691,4 +702,17 @@ def run_many(fct, args=None):
         print("\n".join(map(repr, values)))
 
     output = ForkingOutput.from_forking(forking)
-    return output.returned.splitlines()
+    values = []
+    for arg, line in zip(args, output.returned.splitlines()):
+        try:
+            values.append(ast.literal_eval(line))
+        except (ValueError, TypeError, SyntaxError, MemoryError, RecursionError):
+            fail(
+                "I'm having hard times understanding your function result.",
+                _("I called your function as:").format(fct=fct),
+                code(f"{fct}({", ".join(repr(x) for x in arg)})"),
+                "And your function returned:",
+                code(line),
+            )
+            return None  # Unreachable
+    return values
