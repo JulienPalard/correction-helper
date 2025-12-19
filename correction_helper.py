@@ -609,9 +609,13 @@ class ForkingOutput:
         print(result)
     """
 
+    stdout: str
+    stderr: str
     at_import: str
     during_calls: str
     returned: str
+    exit_code: int
+    exit_signal: int
 
     @classmethod
     def from_forking(cls, child):
@@ -636,7 +640,48 @@ class ForkingOutput:
         except ValueError:
             during_calls, returned = at_runtime, ""
 
-        return cls(at_import, during_calls, returned)
+        return cls(
+            stdout,
+            stderr,
+            at_import,
+            during_calls,
+            returned,
+            exit_code=child.exit.code,
+            exit_signal=child.exit.signal,
+        )
+
+    def check_timeout(self, hint=None):
+        """Fail the correction if the timeout has been reched (got a SIGKILL)."""
+        if self.exit_signal != 9:
+            return  # All good
+        error = []
+        if hint:
+            error.extend((hint, "But I had to halt it, sorry..."))
+        else:
+            error.append("I had to halt your code, sorry...")
+        error.extend(
+            (
+                "It was either too slow or consuming too much resources.",
+                "Check for an infinite loop maybe?",
+            )
+        )
+        if self.at_import:
+            error.extend(
+                _("When I imported your module, it printed:"),
+                code(self.at_import),
+                sep="\n\n",
+            )
+        if self.during_calls:
+            error.extend(
+                _("Your function printed:"),
+                code(self.during_calls),
+                sep="\n\n",
+            )
+        if self.stderr:
+            error.append(
+                "Found this on stderr:\n\n" + code(truncate(to_string(self.stderr)))
+            )
+        fail(*error)
 
 
 def ensure_solution_py():
@@ -668,18 +713,23 @@ def run_one(fct, *args):
         )
     if output.during_calls:
         print(
-            _("When I called your function as:").format(fct=fct),
+            _("When I called your function as:"),
             code(f"{fct}({", ".join(repr(x) for x in args)})"),
             "it printed:",
             code(output.during_calls),
             sep="\n\n",
         )
+    output.check_timeout(
+        hint=_("I called your function as:")
+        + "\n\n"
+        + code(f"{fct}({", ".join(repr(x) for x in args)})")
+    )
     try:
         return ast.literal_eval(output.returned)
     except (ValueError, TypeError, SyntaxError, MemoryError, RecursionError):
         fail(
             "I'm having hard times understanding your function result.",
-            _("I called your function as:").format(fct=fct),
+            _("I called your function as:"),
             code(f"{fct}({", ".join(repr(x) for x in args)})"),
             "And your function returned:",
             code(output.returned),
@@ -688,7 +738,11 @@ def run_one(fct, *args):
 
 
 def run_many(fct, args=None):
-    """Run fct many times with args in an isolated process."""
+    """Run fct many times with args in an isolated process.
+
+    TODO: Run the checks in a pool of like 2 processes?
+    TODO: Yield the result as they come, so the check.py can start checking the results.
+    """
     forking = Forking(timeout=10)
     forking.exception_hook = friendly_traceback.session.exception_hook
     ensure_solution_py()
@@ -702,6 +756,7 @@ def run_many(fct, args=None):
         print("\n".join(map(repr, values)))
 
     output = ForkingOutput.from_forking(forking)
+    output.check_timeout()
     values = []
     for arg, line in zip(args, output.returned.splitlines()):
         try:
@@ -709,10 +764,17 @@ def run_many(fct, args=None):
         except (ValueError, TypeError, SyntaxError, MemoryError, RecursionError):
             fail(
                 "I'm having hard times understanding your function result.",
-                _("I called your function as:").format(fct=fct),
+                _("I called your function as:"),
                 code(f"{fct}({", ".join(repr(x) for x in arg)})"),
                 "And your function returned:",
                 code(line),
             )
             return None  # Unreachable
+    if len(args) != len(values):
+        fail(
+            "You found a bug, please contact julien@palard.fr",
+            code(repr(args)),
+            code(repr(output)),
+            code(repr(values)),
+        )
     return values
