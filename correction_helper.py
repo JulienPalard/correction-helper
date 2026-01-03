@@ -669,13 +669,11 @@ class ForkingOutput:
             error.extend(
                 _("When I imported your module, it printed:"),
                 code(self.at_import),
-                sep="\n\n",
             )
         if self.during_calls:
             error.extend(
                 _("Your function printed:"),
                 code(self.during_calls),
-                sep="\n\n",
             )
         if self.stderr:
             error.append(
