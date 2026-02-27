@@ -49,7 +49,6 @@ CFLAGS = (  # For those correcting C code.
     "-Wredundant-decls",
     "-Wshadow",
     "-Wstrict-aliasing",
-    "-Wstrict-overflow=3",  # Needs -O
     "-Wstrict-prototypes",
     "-Wundef",
     "-Wuninitialized",
