@@ -2,6 +2,7 @@
 
 import ast
 import gettext
+import importlib
 import os
 import random
 import resource
@@ -240,11 +241,9 @@ def student_code(  # pylint: disable=too-many-arguments,too-many-branches
         fail(*too_slow_message)
     except SystemExit:
         resource.setrlimit(resource.RLIMIT_AS, (old_soft, old_hard))
-        fail(
-            """Your program tried to exit,
+        fail("""Your program tried to exit,
 remove any `exit()` or `sys.exit()` from your code,
-else I won't be able to check it."""
-        )
+else I won't be able to check it.""")
     except RuntimeError as err:
         resource.setrlimit(resource.RLIMIT_AS, (old_soft, old_hard))
         if "lost sys.stdin" not in str(err):
@@ -649,11 +648,11 @@ class ForkingOutput:
             exit_signal=child.exit.signal,
         )
 
-    def check_timeout(self, hint=None):
+    def check_timeout(self, hint=None) -> None:
         """Fail the correction if the timeout has been reched (got a SIGKILL)."""
         if self.exit_signal != 9:
             return  # All good
-        error = []
+        error: list[str] = []
         if hint:
             error.extend((hint, "But I had to halt it, sorry..."))
         else:
@@ -666,13 +665,17 @@ class ForkingOutput:
         )
         if self.at_import:
             error.extend(
-                _("When I imported your module, it printed:"),
-                code(self.at_import),
+                (
+                    _("When I imported your module, it printed:"),
+                    code(self.at_import),
+                )
             )
         if self.during_calls:
             error.extend(
-                _("Your function printed:"),
-                code(self.during_calls),
+                (
+                    _("Your function printed:"),
+                    code(self.during_calls),
+                )
             )
         if self.stderr:
             error.append(
@@ -693,9 +696,7 @@ def run_one(fct, *args):
     forking.exception_hook = friendly_traceback.session.exception_hook
     ensure_solution_py()
     with forking:
-        import solution  # pylint: disable=import-outside-toplevel, import-error
-
-        function = getattr(solution, fct)
+        function = getattr(importlib.import_module("solution"), fct)
         print(SEPARATOR)
         value = function(*args)
         print(SEPARATOR)
@@ -744,9 +745,7 @@ def run_many(fct, args=None):
     forking.exception_hook = friendly_traceback.session.exception_hook
     ensure_solution_py()
     with forking:
-        import solution  # pylint: disable=import-outside-toplevel, import-error
-
-        function = getattr(solution, fct)
+        function = getattr(importlib.import_module("solution"), fct)
         print(SEPARATOR)
         values = [function(*arg) for arg in args]
         print(SEPARATOR)
