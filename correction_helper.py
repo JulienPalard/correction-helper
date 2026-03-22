@@ -1,5 +1,7 @@
 """Set of tools to help writing correction bots in Python for Python."""
 
+from __future__ import annotations
+
 import ast
 import gettext
 import importlib
@@ -10,17 +12,21 @@ import shlex
 import signal
 import subprocess
 import sys
+from collections.abc import Callable, Iterable, Iterator, Sequence
 from contextlib import contextmanager, redirect_stderr, redirect_stdout, suppress
 from dataclasses import dataclass
 from io import StringIO
 from itertools import zip_longest
 from pathlib import Path
 from textwrap import indent
-from typing import Optional, Sequence, Tuple, Union
+from types import FrameType
+from typing import Any, Optional, cast
 
 import friendly_traceback
 from forking import Forking
 from friendly_traceback import exclude_file_from_traceback
+
+type PrintCallback = Callable[[str, str], None]
 
 friendly_traceback.set_lang(os.environ.get("LANGUAGE", "en"))
 
@@ -58,29 +64,27 @@ CFLAGS = (  # For those correcting C code.
 )
 
 
-def code(text, language="text"):
+def code(text: str, language: str = "text") -> str:
     """Transform given text as a Markdown code block."""
     return "    :::" + language + "\n" + indent(str(text)[: 2**16], "    ")
 
 
-def print_stderr(*args, **kwargs):
+def print_stderr(*args: str, sep: str | None = None, end: str | None = None) -> None:
     """`print` wrapper outputing to stderr."""
-    print(*args, **kwargs, file=sys.stderr)
+    print(*args, sep=sep, end=end, file=sys.stderr)
 
 
-def fail(*args, sep="\n\n"):
+def fail(*args: str | bytes, sep: str = "\n\n") -> None:
     """Print args separated by sep as a Markdown failure admonition.
 
     By default, if multiple args are given, they are separated by two
     newlines, usefull to build Markdown paragraphs.
     """
-    if any(isinstance(arg, bytes) for arg in args):
-        args = map(to_string, args)
-    admonition("failure", sep.join(args))
+    admonition("failure", sep.join(map(to_string, args)))
     sys.exit(1)
 
 
-def congrats():
+def congrats() -> str:
     """Generate a generic congratulation sentence."""
     if os.environ.get("LANGUAGE", "") == "fr":
         begin = ["Joli", "Bravo", "Bon boulot", "Bien joué", "Super", "Génial", "Bien"]
@@ -112,7 +116,7 @@ def congrats():
     ).strip()
 
 
-def _handle_student_exception(prefix: Optional[Sequence[str]] = None):
+def _handle_student_exception(prefix: Optional[Sequence[str]] = None) -> None:
     """Handle a student exception.
 
     Can preprend an optional prefix.
@@ -128,7 +132,7 @@ def _handle_student_exception(prefix: Optional[Sequence[str]] = None):
 class Run:
     """Representation for a program or function run storing stdout and stderr."""
 
-    def __init__(self, stdout: StringIO, stderr: StringIO):
+    def __init__(self, stdout: StringIO, stderr: StringIO) -> None:
         """Create a Run instance from two StringIO (or Twin instances)."""
         self.stdout = stdout
         self.stderr = stderr
@@ -145,10 +149,10 @@ class Run:
 
 
 @contextmanager
-def deadline(timeout=1):
+def deadline(timeout: int = 1) -> Iterator[None]:
     """Context manager raising a TimeoutError after a given deadline in seconds."""
 
-    def handler(signum, frame):
+    def handler(signum: int, frame: FrameType | None) -> None:
         raise TimeoutError
 
     signal.signal(signal.SIGALRM, handler)
@@ -158,8 +162,8 @@ def deadline(timeout=1):
 
 
 def _prepare_message(
-    prefix: Union[Sequence[str], str], message: Union[Sequence[str], str, None] = None
-) -> Tuple[str, ...]:
+    prefix: Iterable[str] | str, message: Iterable[str] | str | None = None
+) -> tuple[str, ...]:
     if isinstance(prefix, str):
         prefix = (prefix,)
     else:
@@ -176,14 +180,15 @@ def _prepare_message(
 @contextmanager
 def student_code(  # pylint: disable=too-many-arguments,too-many-branches
     *,
-    prefix=(),
-    exception_prefix="",
-    print_allowed=True,  # pylint: disable=redefined-outer-name
-    print_hook=None,
-    print_prefix="Your code printed:",
-    too_slow_message="Your program looks too slow, looks like an infinite loop.",
-    timeout=1,
-):
+    prefix: Iterable[str] = (),
+    print_allowed: bool = True,  # pylint: disable=redefined-outer-name
+    print_hook: None | PrintCallback = None,
+    print_prefix: str | Iterable[str] = "Your code printed:",
+    too_slow_message: (
+        str | Iterable[str]
+    ) = "Your program looks too slow, looks like an infinite loop.",
+    timeout: int = 1,
+) -> Iterator[Run]:
     """Execute student code under surveillance.
 
     It help them spot common errors like:
@@ -209,8 +214,7 @@ def student_code(  # pylint: disable=too-many-arguments,too-many-branches
     (Check the optional arguments to print_allowed, print_denied, and
     print_to_admonition to personalize the messages.)
 
-    `prefix`, if given, is always prefixed to `print_prefix` and
-    `exception_prefix` helping to deduplicate strings.
+    `prefix`, if given, is always prefixed to `print_prefix`
 
     Use as:
     with student_code() as run:
@@ -219,7 +223,6 @@ def student_code(  # pylint: disable=too-many-arguments,too-many-branches
                              # to stdout and stderr (both stripped).
 
     """
-    exception_prefix = _prepare_message(prefix, exception_prefix)
     print_prefix = _prepare_message(prefix, print_prefix)
     too_slow_message = _prepare_message(prefix, too_slow_message)
 
@@ -247,11 +250,11 @@ else I won't be able to check it.""")
     except RuntimeError as err:
         resource.setrlimit(resource.RLIMIT_AS, (old_soft, old_hard))
         if "lost sys.stdin" not in str(err):
-            _handle_student_exception(exception_prefix)
+            _handle_student_exception()
         fail("Don't use the `input` builtin, there's no human to interact with here.")
     except:  # noqa  pylint: disable=bare-except
         resource.setrlimit(resource.RLIMIT_AS, (old_soft, old_hard))
-        _handle_student_exception(exception_prefix)
+        _handle_student_exception()
     finally:
         resource.setrlimit(resource.RLIMIT_AS, (old_soft, old_hard))
         sys.stdin = old_stdin
@@ -268,7 +271,7 @@ else I won't be able to check it.""")
                 sys.exit(1)
 
 
-def print_denied(message="Your code printed:"):
+def print_denied(message: str | Iterable[str] = "Your code printed:") -> PrintCallback:
     """To be used as print_hook to deny prints.
 
     >>> with student_code(print_hook=print_denied("Your function printed:")):
@@ -282,7 +285,7 @@ def print_denied(message="Your code printed:"):
     """
     message = _prepare_message(message)
 
-    def print_cb(out, err):
+    def print_cb(out: str, err: str) -> None:
         if err or out:
             print(*message, sep="\n\n", end="\n\n")
             if err:
@@ -294,7 +297,7 @@ def print_denied(message="Your code printed:"):
     return print_cb
 
 
-def print_silent():
+def print_silent() -> PrintCallback:
     """To be used as print_hook to silence prints.
 
     >>> with student_code(print_hook=print_allowed("Your function printed:")) as run:
@@ -302,10 +305,10 @@ def print_silent():
     >>> print(run.out)
     42
     """
-    return lambda out, err: ...
+    return lambda out, err: None
 
 
-def print_allowed(message="Your code printed:"):
+def print_allowed(message: str | Iterable[str] = "Your code printed:") -> PrintCallback:
     """To be used as print_hook to allow prints.
 
     >>> with student_code(print_hook=print_allowed("Your function printed:")):
@@ -317,7 +320,7 @@ def print_allowed(message="Your code printed:"):
     """
     message = _prepare_message(message)
 
-    def print_cb(out, err):
+    def print_cb(out: str, err: str) -> None:
         if err or out:
             print(*message, sep="\n\n", end="\n\n")
         if err:
@@ -328,7 +331,9 @@ def print_allowed(message="Your code printed:"):
     return print_cb
 
 
-def print_to_admonition(header="Your code printed:", admonition_type="info"):
+def print_to_admonition(
+    header: str | Iterable[str] = "Your code printed:", admonition_type: str = "info"
+) -> PrintCallback:
     """To be used as print_hook, renders prints as a Markdown admonition.
 
     >>> with student_code(print_hook=print_to_admonition("info", "FYI it printed:")):
@@ -349,7 +354,7 @@ def print_to_admonition(header="Your code printed:", admonition_type="info"):
     )
 
 
-def admonition(admonition_type, *body, title=""):
+def admonition(admonition_type: str, *body: str, title: str = "") -> None:
     """Build a Markdown Admonition.
 
     >>> admonition("note", "Hello world.")
@@ -368,7 +373,7 @@ class Section:
     name: str
     prefix: str = ""
     suffix: str = ""
-    highlight: Union[str, bool] = False
+    highlight: str | bool = False
 
 
 MARKDOWN_ITEMS = [
@@ -417,7 +422,7 @@ def friendly_traceback_markdown(
 friendly_traceback.set_formatter(friendly_traceback_markdown)
 
 
-def truncate(string):
+def truncate(string: str) -> str:
     """May truncate string if it's too long."""
     if os.environ.get("CORRECTION_HELPER_NO_TRUNCATE"):
         return string
@@ -433,15 +438,18 @@ def to_string(value: str | bytes) -> str:
     return value
 
 
-def _run(
-    file,
-    *args,
-    program_exited_message="Your program exited with the error code: {code}",
-    **kwargs,
-):  # pylint: disable=too-many-branches
+def _run(  # pylint: disable=too-many-arguments
+    file: str,
+    *args: str,
+    program_exited_message: str = "Your program exited with the error code: {code}",
+    encoding: str | None = None,
+    stdin: int | None = None,
+    errors: str | None = None,
+    input: str | None = None,  # pylint: disable=redefined-builtin
+) -> bytes | str:  # pylint: disable=too-many-branches
     """subprocess.run wrapper explaining failure cases."""
-    if kwargs.get("input") is None and "stdin" not in kwargs:
-        kwargs["stdin"] = subprocess.DEVNULL
+    if input is None and stdin is None:
+        stdin = subprocess.DEVNULL
     start_hint = ""
     if args:
         start_hint = "I started it as:\n\n" + code(
@@ -453,7 +461,10 @@ def _run(
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             check=True,
-            **kwargs,
+            encoding=encoding,
+            stdin=stdin,
+            errors=errors,
+            input=input,
         )
     except subprocess.CalledProcessError as err:
         stdout = stderr = ""
@@ -483,37 +494,59 @@ def _run(
         )
     if proc.stderr:
         fail(proc.stderr)
-    return proc.stdout.rstrip()
+    return cast(bytes | str, proc.stdout.rstrip())
 
 
-def run(file, *args, **kwargs):
+def run(
+    file: str,
+    *args: str,
+    encoding: str | None = None,
+    program_exited_message: str = "Your program exited with the error code: {code}",
+    input: str | None = None,  # pylint: disable=redefined-builtin
+) -> bytes | str:  # pylint: disable=redefined-builtin
     """subprocess.run wrapper, not specialized."""
-    return _run(file, *args, **kwargs)
-
-
-def run_py(file, *args, **kwargs):
-    """subprocess.run wrapper specialized to run Python with friendly."""
     return _run(
-        sys.executable,
-        "-m",
-        "friendly_traceback",
-        "--formatter",
-        "correction_helper.friendly_traceback_markdown",
         file,
-        "--",
         *args,
-        **kwargs,
-        encoding="UTF-8",
-        errors="backslashreplace",
+        encoding=encoding,
+        program_exited_message=program_exited_message,
+        input=input,
     )
 
 
-def run_c(file, *args, **kwargs):
+def run_py(
+    file: str, *args: str, input: str | None = None  # pylint: disable=redefined-builtin
+) -> str:
+    """subprocess.run wrapper specialized to run Python with friendly."""
+    return cast(
+        str,
+        _run(
+            sys.executable,
+            "-m",
+            "friendly_traceback",
+            "--formatter",
+            "correction_helper.friendly_traceback_markdown",
+            file,
+            "--",
+            *args,
+            input=input,
+            encoding="UTF-8",
+            errors="backslashreplace",
+        ),
+    )
+
+
+def run_c(
+    file: str,
+    *args: str,
+    encoding: str | None = None,
+    input: str | None = None,  # pylint: disable=redefined-builtin
+) -> bytes | str:
     """subprocess.run wrapper specialized to run C with valgrind."""
-    return _run("valgrind", "-q", file, *args, **kwargs)
+    return _run("valgrind", "-q", file, *args, input=input, encoding=encoding)
 
 
-def code_or_repr(some_string):
+def code_or_repr(some_string: str) -> str:
     """Display some string for a student.
 
     If the string is short enough, return it between backticks, else
@@ -524,7 +557,7 @@ def code_or_repr(some_string):
     return "\n\n" + code(some_string)
 
 
-def compare(expected, theirs, preamble=""):
+def compare(expected: str, theirs: str, preamble: str = "") -> None:
     """Compare two results.
 
     expected (the right one) and theirs (student output).
@@ -616,7 +649,7 @@ class ForkingOutput:
     exit_signal: int
 
     @classmethod
-    def from_forking(cls, child):
+    def from_forking(cls, child: Forking) -> ForkingOutput:
         """Parse the output of a forking instance."""
         stdout = child.stdout.decode("UTF-8", "backslashreplace")
         stderr = child.stderr.decode("UTF-8", "backslashreplace")
@@ -648,7 +681,7 @@ class ForkingOutput:
             exit_signal=child.exit.signal,
         )
 
-    def check_timeout(self, hint=None) -> None:
+    def check_timeout(self, hint: str | None = None) -> None:
         """Fail the correction if the timeout has been reched (got a SIGKILL)."""
         if self.exit_signal != 9:
             return  # All good
@@ -684,16 +717,16 @@ class ForkingOutput:
         fail(*error)
 
 
-def ensure_solution_py():
+def ensure_solution_py() -> None:
     """Just rename solution to solution.py if needed."""
     with suppress(FileNotFoundError):
         Path("solution").rename("solution.py")
 
 
-def run_one(fct, *args):
+def run_one(fct: str, *args: Any) -> Any:
     """Run fct with args in an isolated process."""
     forking = Forking(timeout=10)
-    forking.exception_hook = friendly_traceback.session.exception_hook
+    forking.exception_hook = friendly_traceback.session.exception_hook  # type: ignore
     ensure_solution_py()
     with forking:
         function = getattr(importlib.import_module("solution"), fct)
@@ -735,14 +768,14 @@ def run_one(fct, *args):
         return None  # Unreachable
 
 
-def run_many(fct, args=None):
+def run_many(fct: str, args: Sequence[Any]) -> list[Any]:
     """Run fct many times with args in an isolated process.
 
     TODO: Run the checks in a pool of like 2 processes?
     TODO: Yield the result as they come, so the check.py can start checking the results.
     """
     forking = Forking(timeout=10)
-    forking.exception_hook = friendly_traceback.session.exception_hook
+    forking.exception_hook = friendly_traceback.session.exception_hook  # type: ignore
     ensure_solution_py()
     with forking:
         function = getattr(importlib.import_module("solution"), fct)
@@ -765,7 +798,7 @@ def run_many(fct, args=None):
                 "And your function returned:",
                 code(line),
             )
-            return None  # Unreachable
+            return []  # Unreachable
     if len(args) != len(values):
         fail(
             "You found a bug, please contact julien@palard.fr",

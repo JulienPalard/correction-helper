@@ -41,14 +41,6 @@ Find a more complete example in the `examples/` directory.
 
 ## Allowed parameters for `student_code`, and their default values
 
-### `exception_prefix="I got an exception:"`
-
-Printed right before the exception, if any.
-
-It's allowed to give a list of strings, in which case they'll be
-separated by `"\n\n"`, useful to render markdown paragraphs.
-
-
 ### `print_prefix="Your code printed:"`
 
 Message to display before the student prints (in case `print_allowed`
